@@ -1,7 +1,12 @@
-#include <Windows.h>
+#include <windows.h>
+#include <windowsx.h>
+#include <winuser.h>
+
 #include <iostream>
 #include <string>
 #include <functional>
+
+#include "Defines.h"
 
 class Window
 {
@@ -13,6 +18,9 @@ private:
     std::string m_WindowTitle;
     WNDCLASS m_WinProps = {};
     HWND m_Window = {};
+
+    uint16_t m_Width;
+    uint16_t m_Height;
 
     bool m_ShouldClose;
 public:
@@ -61,34 +69,90 @@ public:
     {
         return m_ShouldClose;
     }
+
+    void Close()
+    {
+        if (m_Window)
+        {
+            DestroyWindow(m_Window);
+            m_Window = nullptr;
+        }
+    }
+
+    WORD Width()
+    {
+        return m_Width;
+    }
+
+    WORD Height()
+    {
+        return m_Height;
+    }
+
+    ~Window()
+    {
+        Close();
+    }
 private:
+    void OnWindowResized(WORD width, WORD height)
+    {
+        m_Width = width;
+        m_Height = height;
+
+        std::cout << "Resized the window, New size: " << m_Width << "x" << m_Height << std::endl;
+    }
+
+    void OnWindowClosed()
+    {
+        std::cout << "Window terminated" << std::endl;
+    }
+
+    void OnMouseMoved(WORD xpos, WORD ypos)
+    {
+        std::cout << "Mouse moved, x:" << xpos << " y:" << ypos << std::endl;
+    }
+
+    void OnKeyPressed(WPARAM key_code, bool repeated)
+    {
+        std::cout << "Key " << key_code << " pressed. Repeated (" << repeated << ")" << std::endl;
+    }
+
+    void OnKeyReleased(WPARAM key_code)
+    {
+        std::cout << "Key " << key_code << " released." << std::endl;
+    }
+
     static LRESULT CALLBACK WindowEventHandler(HWND window, UINT message, WPARAM param_1, LPARAM param_2)
     {
-        Window* creator =
+        Window* owner =
             reinterpret_cast<Window*>(GetWindowLongPtrW(window, 0));
+
+        if (!owner)
+            return DefWindowProc(window, message, param_1, param_2);
 
         switch (message)
         {
         case WM_DESTROY:
-            PostQuitMessage(0);
+            owner->OnWindowClosed();
             return 0;
         case WM_CLOSE:
-            if (MessageBox(window, "Application", "Close the window?", MB_YESNO) == IDYES)
-            {
-                DestroyWindow(window);
-            }
-            creator->m_ShouldClose = true;
+            owner->m_ShouldClose = true;
             return 0;
-            break;
         case WM_SIZE:
-            int width = LOWORD(param_2);
-            int height = HIWORD(param_2);
-
-            std::cout << "Resized the window, New size: " << width << "x" << height << std::endl;
-            break;
+            owner->OnWindowResized(LOWORD(param_2), HIWORD(param_2));
+            return 0;
+        case WM_MOUSEMOVE:
+            owner->OnMouseMoved(GET_X_LPARAM(param_2), GET_Y_LPARAM(param_2));
+            return 0;
+        case WM_KEYDOWN:
+            owner->OnKeyPressed(param_1, param_2 & AWML_REPEATED_BIT);
+            return 0;
+        case WM_KEYUP:
+            owner->OnKeyReleased(param_1);
+            return 0;
+        default:
+            return DefWindowProc(window, message, param_1, param_2);
         }
-
-        return DefWindowProc(window, message, param_1, param_2);
     }
 };
 
