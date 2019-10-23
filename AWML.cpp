@@ -16,9 +16,9 @@ namespace awml {
         static HINSTANCE s_ThisInstance;
         static uint16_t  s_WindowID;
 
-        std::string m_ClassName;
-        std::string m_WindowTitle;
-        WNDCLASS m_WinProps = {};
+        std::wstring m_ClassName;
+        std::wstring m_WindowTitle;
+        WNDCLASSW m_WinProps = {};
         HWND m_Window = {};
 
         uint16_t m_Width;
@@ -26,18 +26,18 @@ namespace awml {
 
         bool m_ShouldClose;
     public:
-        Window(const std::string& title, uint16_t width, uint16_t height)
+        Window(const std::wstring& title, uint16_t width, uint16_t height)
             : m_ClassName(title), m_WindowTitle(title), m_ShouldClose(false)
         {
-            m_ClassName += std::to_string(s_WindowID++);
+            m_ClassName += std::to_wstring(s_WindowID++);
 
             m_WinProps.lpfnWndProc = WindowEventHandler;
             m_WinProps.hInstance = s_ThisInstance;
             m_WinProps.lpszClassName = m_ClassName.c_str();
             m_WinProps.cbWndExtra = sizeof(Window*);
-            RegisterClass(&m_WinProps);
+            RegisterClassW(&m_WinProps);
 
-            m_Window = CreateWindowEx(
+            m_Window = CreateWindowExW(
                 0,
                 m_ClassName.c_str(),
                 m_WindowTitle.c_str(),
@@ -60,10 +60,10 @@ namespace awml {
         void PollEvents()
         {
             MSG msg = { };
-            while (PeekMessage(&msg, m_Window, 0, 0, PM_REMOVE) > 0)
+            while (PeekMessageW(&msg, m_Window, 0, 0, PM_REMOVE) > 0)
             {
                 TranslateMessage(&msg);
-                DispatchMessage(&msg);
+                DispatchMessageW(&msg);
             }
         }
 
@@ -93,15 +93,7 @@ namespace awml {
 
         bool KeyPressed(awml_keycode key_code)
         {
-            try
-            {
-
             return AWML_KEY_PRESSED_BIT & GetKeyState(key_code);
-            }
-            catch (const std::exception& ex)
-            {
-                std::cout << ex.what();
-            }
         }
 
         ~Window()
@@ -142,14 +134,18 @@ namespace awml {
             std::cout << "Mouse wheel rotated " << rotation << std::endl;
         }
 
-        void OnKeyPressed(WPARAM key_code, bool repeated)
+        void OnKeyPressed(WPARAM key_code, bool repeated, uint16_t repeat_count)
         {
-            std::cout << "Key " << (char)key_code << " pressed. Repeated (" << repeated << ")" << std::endl;
+            std::cout << "Key " << (char)key_code << " pressed. Repeated (" << repeated << ") " << "Repeat count (" << repeat_count << ")" << std::endl;
         }
 
         void OnKeyReleased(WPARAM key_code)
         {
             std::cout << "Key " << key_code << " released." << std::endl;
+        }
+
+        void OnCharTyped(wchar_t typed_char)
+        {
         }
 
         static LRESULT CALLBACK WindowEventHandler(HWND window, UINT message, WPARAM param_1, LPARAM param_2)
@@ -158,10 +154,27 @@ namespace awml {
                 reinterpret_cast<Window*>(GetWindowLongPtrW(window, 0));
 
             if (!owner)
-                return DefWindowProc(window, message, param_1, param_2);
+                return DefWindowProcW(window, message, param_1, param_2);
 
             switch (message)
             {
+            case WM_PAINT:
+            {
+                PAINTSTRUCT ps;
+                HDC hdc = BeginPaint(owner->m_Window, &ps);
+
+                // All painting occurs here, between BeginPaint and EndPaint.
+
+                FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1));
+
+                EndPaint(owner->m_Window, &ps);
+                return 0;
+            }
+            case WM_INPUTLANGCHANGE:
+                std::cout << "inputlang " << std::endl;
+                SetFocus(owner -> m_Window);
+                SetCapture(owner->m_Window);
+                return 0;
             case WM_DESTROY:
                 owner->OnWindowClosed();
                 return 0;
@@ -188,30 +201,36 @@ namespace awml {
                 owner->OnMouseWheelRotated(GET_WHEEL_DELTA_WPARAM(param_1));
                 return 0;
             case WM_KEYDOWN:
-                owner->OnKeyPressed(param_1, param_2 & AWML_REPEATED_BIT);
+                owner->OnKeyPressed(
+                    param_1,
+                    param_2 & AWML_REPEATED_BIT,
+                    param_2 & AWML_REPEAT_COUNT_MASK
+                );
                 return 0;
             case WM_KEYUP:
                 owner->OnKeyReleased(param_1);
                 return 0;
+            case WM_CHAR:
+                owner->OnCharTyped(static_cast<wchar_t>(param_1));
+                return 0;
             default:
-                return DefWindowProc(window, message, param_1, param_2);
+                return DefWindowProcW(window, message, param_1, param_2);
             }
         }
     };
 
-    HINSTANCE Window::s_ThisInstance = GetModuleHandle(NULL);
+    HINSTANCE Window::s_ThisInstance = GetModuleHandleW(NULL);
     uint16_t  Window::s_WindowID = 1;
 }
 
 int main()
 {
-    auto win = awml::Window("Test Window", 1280, 720);
+    auto win = awml::Window(L"Рандомное Окно", 1280, 720);
 
     while (!win.ShouldClose())
     {
-        if (win.KeyPressed(AWML_F10))
+        if (win.KeyPressed(AWML_KEY_W))
             std::cout << "ASD" << std::endl;
-
 
         win.PollEvents();
     }
