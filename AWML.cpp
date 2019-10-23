@@ -57,13 +57,13 @@ namespace awml {
             ShowWindow(m_Window, SW_NORMAL);
         }
 
-        void PollEvents()
+        static void PollEvents()
         {
-            MSG msg = { };
-            while (PeekMessageW(&msg, m_Window, 0, 0, PM_REMOVE) > 0)
+            auto message = MSG();
+            while (PeekMessageW(&message, NULL, 0, 0, PM_REMOVE))
             {
-                TranslateMessage(&msg);
-                DispatchMessageW(&msg);
+                TranslateMessage(&message);
+                DispatchMessageW(&message);
             }
         }
 
@@ -81,12 +81,12 @@ namespace awml {
             }
         }
 
-        WORD Width()
+        uint16_t Width()
         {
             return m_Width;
         }
 
-        WORD Height()
+        uint16_t Height()
         {
             return m_Height;
         }
@@ -158,23 +158,6 @@ namespace awml {
 
             switch (message)
             {
-            case WM_PAINT:
-            {
-                PAINTSTRUCT ps;
-                HDC hdc = BeginPaint(owner->m_Window, &ps);
-
-                // All painting occurs here, between BeginPaint and EndPaint.
-
-                FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1));
-
-                EndPaint(owner->m_Window, &ps);
-                return 0;
-            }
-            case WM_INPUTLANGCHANGE:
-                std::cout << "inputlang " << std::endl;
-                SetFocus(owner -> m_Window);
-                SetCapture(owner->m_Window);
-                return 0;
             case WM_DESTROY:
                 owner->OnWindowClosed();
                 return 0;
@@ -225,13 +208,10 @@ namespace awml {
 
 int main()
 {
-    auto win = awml::Window(L"Рандомное Окно", 1280, 720);
+    auto win = awml::Window(L"MyWindow", 1280, 720);
 
     while (!win.ShouldClose())
     {
-        if (win.KeyPressed(AWML_KEY_W))
-            std::cout << "ASD" << std::endl;
-
         win.PollEvents();
     }
 
