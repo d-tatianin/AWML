@@ -18,16 +18,31 @@ namespace awml {
 
         std::wstring m_ClassName;
         std::wstring m_WindowTitle;
-        WNDCLASSW m_WinProps = {};
-        HWND m_Window = {};
+        WNDCLASSW m_WinProps;
+        HWND m_Window;
 
         uint16_t m_Width;
         uint16_t m_Height;
 
+        uint16_t m_MouseX;
+        uint16_t m_MouseY;
+
         bool m_ShouldClose;
+
     public:
-        Window(const std::wstring& title, uint16_t width, uint16_t height)
-            : m_ClassName(title), m_WindowTitle(title), m_ShouldClose(false)
+        Window(
+            const std::wstring& title,
+            uint16_t width,
+            uint16_t height
+        ) : m_ClassName(title),
+            m_WindowTitle(title),
+            m_WinProps(),
+            m_Window(),
+            m_Width(0),
+            m_Height(0),
+            m_MouseX(0),
+            m_MouseY(0),
+            m_ShouldClose(false)
         {
             m_ClassName += std::to_wstring(s_WindowID++);
 
@@ -91,6 +106,16 @@ namespace awml {
             return m_Height;
         }
 
+        uint16_t MouseX()
+        {
+            return m_MouseX;
+        }
+
+        uint16_t MouseY()
+        {
+            return m_MouseY;
+        }
+
         bool KeyPressed(awml_keycode key_code)
         {
             return AWML_KEY_PRESSED_BIT & GetKeyState(key_code);
@@ -100,6 +125,7 @@ namespace awml {
         {
             Close();
         }
+
     private:
         void OnWindowResized(WORD width, WORD height)
         {
@@ -116,7 +142,13 @@ namespace awml {
 
         void OnMouseMoved(WORD xpos, WORD ypos)
         {
-            std::cout << "Mouse moved, x:" << xpos << " y:" << ypos << std::endl;
+            if (xpos != m_MouseX || ypos != m_MouseY)
+            {
+                m_MouseX = xpos;
+                m_MouseY = ypos;
+
+                std::cout << "Mouse moved, x:" << xpos << " y:" << ypos << std::endl;
+            }
         }
 
         void OnMousePressed(UINT code)
@@ -129,7 +161,7 @@ namespace awml {
             std::cout << "Mouse button " << code << " released." << std::endl;
         }
 
-        void OnMouseWheelRotated(int16_t rotation)
+        void OnMouseScrolled(int16_t rotation)
         {
             std::cout << "Mouse wheel rotated " << rotation << std::endl;
         }
@@ -148,7 +180,12 @@ namespace awml {
         {
         }
 
-        static LRESULT CALLBACK WindowEventHandler(HWND window, UINT message, WPARAM param_1, LPARAM param_2)
+        static LRESULT CALLBACK WindowEventHandler(
+            HWND window,
+            UINT message,
+            WPARAM param_1,
+            LPARAM param_2
+        )
         {
             Window* owner =
                 reinterpret_cast<Window*>(GetWindowLongPtrW(window, 0));
@@ -165,10 +202,16 @@ namespace awml {
                 owner->m_ShouldClose = true;
                 return 0;
             case WM_SIZE:
-                owner->OnWindowResized(LOWORD(param_2), HIWORD(param_2));
+                owner->OnWindowResized(
+                    LOWORD(param_2),
+                    HIWORD(param_2)
+                );
                 return 0;
             case WM_MOUSEMOVE:
-                owner->OnMouseMoved(GET_X_LPARAM(param_2), GET_Y_LPARAM(param_2));
+                owner->OnMouseMoved(
+                    GET_X_LPARAM(param_2),
+                    GET_Y_LPARAM(param_2)
+                );
                 return 0;
             case WM_LBUTTONDOWN:
             case WM_MBUTTONDOWN:
@@ -181,7 +224,9 @@ namespace awml {
                 owner->OnMouseReleased(message);
                 return 0;
             case WM_MOUSEWHEEL:
-                owner->OnMouseWheelRotated(GET_WHEEL_DELTA_WPARAM(param_1));
+                owner->OnMouseScrolled(
+                    GET_WHEEL_DELTA_WPARAM(param_1)
+                );
                 return 0;
             case WM_KEYDOWN:
                 owner->OnKeyPressed(
