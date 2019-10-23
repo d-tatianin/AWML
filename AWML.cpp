@@ -1,6 +1,5 @@
 #include <windows.h>
 #include <windowsx.h>
-#include <winuser.h>
 
 #include <iostream>
 #include <string>
@@ -92,9 +91,17 @@ namespace awml {
             return m_Height;
         }
 
-        bool KeyPressed(uint16_t key_code)
+        bool KeyPressed(awml_keycode key_code)
         {
+            try
+            {
+
             return AWML_KEY_PRESSED_BIT & GetKeyState(key_code);
+            }
+            catch (const std::exception& ex)
+            {
+                std::cout << ex.what();
+            }
         }
 
         ~Window()
@@ -202,8 +209,8 @@ int main()
 
     while (!win.ShouldClose())
     {
-        if (win.KeyPressed(AWML_F12))
-            std::cout << "ASD";
+        if (win.KeyPressed(AWML_F10))
+            std::cout << "ASD" << std::endl;
 
 
         win.PollEvents();

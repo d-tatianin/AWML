@@ -6,7 +6,7 @@
     #define AWML_MB_RIGHT     0x02
     #define AWML_MB_MIDDLE    0x04
 
-    // ---- Misc keyboard buttons ----
+    // ---- Misc keyboard keys ----
     #define AWML_BACKSPACE    0x08
     #define AWML_TAB          0x09
     #define AWML_ENTER        0x0D
@@ -105,7 +105,7 @@
     #define AWML_F11          0x7A
     #define AWML_F12          0x7B
 
-    // ---- Shift/ctrl/etc buttons ----
+    // ---- Shift/ctrl/etc keys ----
     #define AWML_NUMLOCK      0x90
     #define AWML_SCRLLOCK     0x91
     #define AWML_LEFT_SHIFT   0xA0
