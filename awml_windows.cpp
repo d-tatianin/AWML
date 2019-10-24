@@ -102,6 +102,16 @@ namespace awml {
         return m_MouseY;
     }
 
+    void WindowsWindow::OnKeyPressedFunc(key_pressed_callback cb)
+    {
+        m_KeyPressedCB = cb;
+    }
+
+    void WindowsWindow::OnKeyReleasedFunc(key_released_callback cb)
+    {
+        m_KeyReleasedCB = cb;
+    }
+
     bool WindowsWindow::KeyPressed(awml_keycode key_code)
     {
         return AWML_KEY_PRESSED_BIT & GetKeyState(key_code);
@@ -153,12 +163,19 @@ namespace awml {
 
     void WindowsWindow::OnKeyPressed(WPARAM key_code, bool repeated, uint16_t repeat_count)
     {
-        std::cout << "Key " << (char)key_code << " pressed. Repeated (" << repeated << ") " << "Repeat count (" << repeat_count << ")" << std::endl;
+        if (m_KeyPressedCB)
+            m_KeyPressedCB(
+                static_cast<awml_keycode>(key_code),
+                repeated, repeat_count
+            );
     }
 
     void WindowsWindow::OnKeyReleased(WPARAM key_code)
     {
-        std::cout << "Key " << key_code << " released." << std::endl;
+        if (m_KeyReleasedCB)
+            m_KeyReleasedCB(
+                static_cast<awml_keycode>(key_code)
+            );
     }
 
     void WindowsWindow::OnCharTyped(wchar_t typed_char)

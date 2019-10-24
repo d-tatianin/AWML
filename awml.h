@@ -1,9 +1,20 @@
 #include <string>
+#include <functional>
 #include <memory>
 
 #include "utilities.h"
 
 namespace awml {
+
+    // A callback that gets called when a key is pressed.
+    // Parameters: keycode, repeated, repeat_count.
+    typedef std::function<void(awml_keycode, bool, uint16_t)>
+        key_pressed_callback;
+
+    // A callback that gets called when a key is released.
+    // Parameters: keycode.
+    typedef std::function<void(awml_keycode)>
+        key_released_callback;
 
     class Window
     {
@@ -22,6 +33,14 @@ namespace awml {
     protected:
         Window() {}
     public:
+        virtual void OnKeyPressedFunc(
+            key_pressed_callback cb
+        ) = 0;
+
+        virtual void OnKeyReleasedFunc(
+            key_released_callback cb
+        ) = 0;
+
         virtual void PollEvents() = 0;
 
         virtual bool ShouldClose() = 0;

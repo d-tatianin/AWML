@@ -29,6 +29,8 @@ namespace awml {
 
         bool m_ShouldClose;
 
+        key_pressed_callback  m_KeyPressedCB;
+        key_released_callback m_KeyReleasedCB;
     public:
         WindowsWindow(
             const std::wstring& title,
@@ -49,6 +51,14 @@ namespace awml {
         uint16_t MouseX() override;
 
         uint16_t MouseY() override;
+
+        void OnKeyPressedFunc(
+            key_pressed_callback cb
+        ) override;
+
+        void OnKeyReleasedFunc(
+            key_released_callback cb
+        ) override;
 
         bool KeyPressed(awml_keycode key_code) override;
 
