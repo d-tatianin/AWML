@@ -7,14 +7,63 @@
 namespace awml {
 
     // A callback that gets called when a key is pressed.
-    // Parameters: keycode, repeated, repeat_count.
+    // Parameters:
+    // awml_keycode -> Key that was pressed.
+    // bool -> Whether it's a repeated event.
+    // uint16_t -> Repeat count (usually 1 if polled often enough).
     typedef std::function<void(awml_keycode, bool, uint16_t)>
         key_pressed_callback;
 
     // A callback that gets called when a key is released.
-    // Parameters: keycode.
+    // Parameters:
+    // awml_keycode -> Key that was released.
     typedef std::function<void(awml_keycode)>
         key_released_callback;
+
+    // A callback that gets called whenever window is resized
+    // Parameters:
+    // uint16_t -> New window width.
+    // uint16_t -> New window height.
+    typedef std::function<void(uint16_t, uint16_t)>
+        window_resized_callback;
+
+    // A callback that gets called once the window is closed.
+    // Parameters:
+    // NONE
+    typedef std::function<void()>
+        window_closed_callback;
+
+    // A callback that gets called whenever mouse is moved.
+    // Parameters:
+    // uint16_t -> New mouse x coordinate.
+    // uint16_t -> New mouse y coordinate.
+    typedef std::function<void(uint16_t, uint16_t)>
+        mouse_moved_callback;
+
+    // A callback that gets called whenever a mouse button is pressed.
+    // Parameters:
+    // awml_keycode -> Mouse button that was pressed. 
+    typedef std::function<void(awml_keycode)>
+        mouse_pressed_callback;
+
+    // A callback that gets called whenever a mouse button is released.
+    // Parameters:
+    // awml_keycode -> Mouse button that was released. 
+    typedef std::function<void(awml_keycode)>
+        mouse_released_callback;
+
+    // A callback that gets called when mouse wheel is scrolled.
+    // Parameters:
+    // int16_t -> A value between [-10; 10] that indicates the delta of the scroll.
+    // bool -> Set to true if it's a vertical scroll, false if horizontal.
+    typedef std::function<void(int16_t, bool)>
+        mouse_scrolled_callback;
+
+    // A callback that gets called after a character is typed.
+    // Parameters:
+    // wchar_t -> The character typed by the user.
+    typedef std::function<void(wchar_t)>
+        char_typed_callback;
 
     class Window
     {
@@ -39,6 +88,34 @@ namespace awml {
 
         virtual void OnKeyReleasedFunc(
             key_released_callback cb
+        ) = 0;
+
+        virtual void OnWindowResizedFunc(
+            window_resized_callback cb
+        ) = 0;
+
+        virtual void OnWindowClosedFunc(
+            window_closed_callback cb
+        ) = 0;
+
+        virtual void OnMouseMovedFunc(
+            mouse_moved_callback cb
+        ) = 0;
+
+        virtual void OnMousePressedFunc(
+            mouse_pressed_callback cb
+        ) = 0;
+
+        virtual void OnMouseReleasedFunc(
+            mouse_released_callback cb
+        ) = 0;
+
+        virtual void OnMouseScrolledFunc(
+            mouse_scrolled_callback cb
+        ) = 0;
+
+        virtual void OnCharTypedFunc(
+            char_typed_callback cb
         ) = 0;
 
         virtual void PollEvents() = 0;

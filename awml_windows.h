@@ -29,8 +29,15 @@ namespace awml {
 
         bool m_ShouldClose;
 
-        key_pressed_callback  m_KeyPressedCB;
-        key_released_callback m_KeyReleasedCB;
+        key_pressed_callback    m_KeyPressedCB;
+        key_released_callback   m_KeyReleasedCB;
+        window_resized_callback m_WindowResizedCB;
+        window_closed_callback  m_WindowClosedCB;
+        mouse_moved_callback    m_MouseMovedCB;
+        mouse_pressed_callback  m_MousePressedCB;
+        mouse_released_callback m_MouseReleasedCB;
+        mouse_scrolled_callback m_MouseScrolledCB;
+        char_typed_callback     m_CharTypedCB;
     public:
         WindowsWindow(
             const std::wstring& title,
@@ -60,6 +67,34 @@ namespace awml {
             key_released_callback cb
         ) override;
 
+        void OnWindowResizedFunc(
+            window_resized_callback cb
+        ) override;
+
+        void OnWindowClosedFunc(
+            window_closed_callback cb
+        ) override;
+
+        void OnMouseMovedFunc(
+            mouse_moved_callback cb
+        ) override;
+
+        void OnMousePressedFunc(
+            mouse_pressed_callback cb
+        ) override;
+
+        void OnMouseReleasedFunc(
+            mouse_released_callback cb
+        ) override;
+
+        void OnMouseScrolledFunc(
+            mouse_scrolled_callback cb
+        ) override;
+
+        void OnCharTypedFunc(
+            char_typed_callback cb
+        ) override;
+
         bool KeyPressed(awml_keycode key_code) override;
 
         ~WindowsWindow();
@@ -74,7 +109,7 @@ namespace awml {
 
         void OnMouseReleased(UINT code);
 
-        void OnMouseScrolled(int16_t rotation);
+        void OnMouseScrolled(int16_t rotation, bool vertical);
 
         void OnKeyPressed(WPARAM key_code, bool repeated, uint16_t repeat_count);
 

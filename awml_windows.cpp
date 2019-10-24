@@ -112,6 +112,41 @@ namespace awml {
         m_KeyReleasedCB = cb;
     }
 
+    void WindowsWindow::OnWindowResizedFunc(window_resized_callback cb)
+    {
+        m_WindowResizedCB = cb;
+    }
+
+    void WindowsWindow::OnWindowClosedFunc(window_closed_callback cb)
+    {
+        m_WindowClosedCB = cb;
+    }
+
+    void WindowsWindow::OnMouseMovedFunc(mouse_moved_callback cb)
+    {
+        m_MouseMovedCB = cb;
+    }
+
+    void WindowsWindow::OnMousePressedFunc(mouse_pressed_callback cb)
+    {
+        m_MousePressedCB = cb;
+    }
+
+    void WindowsWindow::OnMouseReleasedFunc(mouse_released_callback cb)
+    {
+        m_MouseReleasedCB = cb;
+    }
+
+    void WindowsWindow::OnMouseScrolledFunc(mouse_scrolled_callback cb)
+    {
+        m_MouseScrolledCB = cb;
+    }
+
+    void WindowsWindow::OnCharTypedFunc(char_typed_callback cb)
+    {
+        m_CharTypedCB = cb;
+    }
+
     bool WindowsWindow::KeyPressed(awml_keycode key_code)
     {
         return AWML_KEY_PRESSED_BIT & GetKeyState(key_code);
@@ -126,39 +161,57 @@ namespace awml {
     {
         m_Width = width;
         m_Height = height;
-    
-        std::cout << "Resized the window, New size: " << m_Width << "x" << m_Height << std::endl;
+
+        if (m_WindowResizedCB)
+            m_WindowResizedCB(width, height);
     }
 
     void WindowsWindow::OnWindowClosed()
     {
-        std::cout << "Window terminated" << std::endl;
+        if (m_WindowClosedCB)
+            m_WindowClosedCB();
     }
 
     void WindowsWindow::OnMouseMoved(WORD xpos, WORD ypos)
     {
+        // The window can generate spurious mouse moved events,
+        // so we have to handle that case here.
         if (xpos != m_MouseX || ypos != m_MouseY)
         {
             m_MouseX = xpos;
             m_MouseY = ypos;
-    
-            std::cout << "Mouse moved, x:" << xpos << " y:" << ypos << std::endl;
+
+            if (m_MouseMovedCB)
+                m_MouseMovedCB(m_MouseX, m_MouseY);
         }
     }
 
     void WindowsWindow::OnMousePressed(UINT code)
     {
-        std::cout << "Mouse button " << code << " pressed." << std::endl;
+        if (m_MousePressedCB)
+            m_MousePressedCB(
+                static_cast<awml_keycode>(code)
+            );
     }
 
     void WindowsWindow::OnMouseReleased(UINT code)
     {
-        std::cout << "Mouse button " << code << " released." << std::endl;
+        if (m_MouseReleasedCB)
+            m_MouseReleasedCB(
+                static_cast<awml_keycode>(code)
+            );
     }
 
-    void WindowsWindow::OnMouseScrolled(int16_t rotation)
+    void WindowsWindow::OnMouseScrolled(int16_t rotation, bool vertical)
     {
-        std::cout << "Mouse wheel rotated " << rotation << std::endl;
+        rotation /= 12;
+
+        // make sure we're not out of bounds
+        if      (rotation >  10) rotation =  10;
+        else if (rotation < -10) rotation = -10;
+
+        if (m_MouseScrolledCB)
+            m_MouseScrolledCB(rotation, vertical);
     }
 
     void WindowsWindow::OnKeyPressed(WPARAM key_code, bool repeated, uint16_t repeat_count)
@@ -180,6 +233,8 @@ namespace awml {
 
     void WindowsWindow::OnCharTyped(wchar_t typed_char)
     {
+        if (m_CharTypedCB)
+            m_CharTypedCB(typed_char);
     }
 
     LRESULT CALLBACK WindowsWindow::WindowEventHandler(
@@ -227,7 +282,14 @@ namespace awml {
             return 0;
         case WM_MOUSEWHEEL:
             owner->OnMouseScrolled(
-                GET_WHEEL_DELTA_WPARAM(param_1)
+                GET_WHEEL_DELTA_WPARAM(param_1),
+                true
+            );
+            return 0;
+        case WM_MOUSEHWHEEL:
+            owner->OnMouseScrolled(
+                GET_WHEEL_DELTA_WPARAM(param_1),
+                false
             );
             return 0;
         case WM_KEYDOWN:
