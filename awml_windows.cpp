@@ -271,14 +271,22 @@ namespace awml {
             );
             return 0;
         case WM_LBUTTONDOWN:
+            owner->OnMousePressed(AWML_MB_LEFT);
+            return 0;
         case WM_MBUTTONDOWN:
+            owner->OnMousePressed(AWML_MB_MIDDLE);
+            return 0;
         case WM_RBUTTONDOWN:
-            owner->OnMousePressed(message);
+            owner->OnMousePressed(AWML_MB_RIGHT);
             return 0;
         case WM_LBUTTONUP:
+            owner->OnMouseReleased(AWML_MB_LEFT);
+            return 0;
         case WM_MBUTTONUP:
+            owner->OnMouseReleased(AWML_MB_MIDDLE);
+            return 0;
         case WM_RBUTTONUP:
-            owner->OnMouseReleased(message);
+            owner->OnMouseReleased(AWML_MB_RIGHT);
             return 0;
         case WM_MOUSEWHEEL:
             owner->OnMouseScrolled(
