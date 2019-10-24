@@ -30,6 +30,79 @@ int main()
         }
     );
 
+    window->OnWindowResizedFunc(
+        [](uint16_t width, uint16_t height)
+        {
+            std::cout <<
+                "Resized the window, New size: "
+                << width
+                << "x"
+                << height
+                << std::endl;
+        }
+    );
+
+    window->OnWindowClosedFunc(
+        []()
+        {
+            std::cout << "Window terminated!"
+                << std::endl;
+        }
+    );
+
+    window->OnMouseMovedFunc(
+        [](uint16_t xpos, uint16_t ypos)
+        {
+            std::cout << "Mouse moved, x:"
+                << xpos
+                << " y:"
+                << ypos
+                << std::endl;
+        }
+    );
+
+    window->OnMousePressedFunc(
+        [](awml_keycode code)
+        {
+            std::cout << "Mouse button "
+                << code
+                << " pressed."
+                << std::endl;
+        }
+    );
+
+    window->OnMouseReleasedFunc(
+        [](awml_keycode code)
+        {
+            std::cout << "Mouse button "
+                << code
+                << " released."
+                << std::endl;
+        }
+    );
+
+    window->OnMouseScrolledFunc(
+        [](int16_t rotation, bool vertical)
+        {
+            std::cout << "Mouse scrolled "
+                << rotation
+                << (vertical ?
+                    " verically" :
+                    " horizontally")
+                << std::endl;
+        }
+    );
+
+    window->OnCharTypedFunc(
+        [](wchar_t typed_char)
+        {
+            // PS: Don't use cout with wchar_t.
+            std::cout << "Typed a char: "
+                << static_cast<char>(typed_char)
+                << std::endl;
+        }
+    );
+
     while (!window->ShouldClose())
     {
         window->PollEvents();
