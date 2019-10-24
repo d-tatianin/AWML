@@ -8,6 +8,68 @@
 
 namespace awml {
 
+    WindowsOpenGLContext::WindowsOpenGLContext()
+        : m_Context(),
+        m_OpenGLContext(),
+        m_Format(),
+        m_Window()
+    {
+    }
+
+    bool WindowsOpenGLContext::Setup(Window* self)
+    {
+        m_Window = static_cast<WindowsWindow*>(self);
+
+        PIXELFORMATDESCRIPTOR pfd =
+        {
+            sizeof(PIXELFORMATDESCRIPTOR),
+            1,
+            PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
+            PFD_TYPE_RGBA,
+            32,
+            0, 0, 0, 0, 0, 0,
+            0,
+            0,
+            0,
+            0, 0, 0, 0,
+            24,
+            8,
+            0,
+            PFD_MAIN_PLANE,
+            0,
+            0, 0, 0
+        };
+
+        m_Context = GetDC(m_Window->m_Window);
+
+        m_Format = ChoosePixelFormat(m_Context, &pfd);
+
+        SetPixelFormat(m_Context, m_Format, &pfd);
+
+        m_OpenGLContext = wglCreateContext(m_Context);
+
+        return true;
+    }
+
+    bool WindowsOpenGLContext::Activate()
+    {
+        wglMakeCurrent(m_Context, m_OpenGLContext);
+
+        return true;
+    }
+
+    void WindowsOpenGLContext::SwapBuffers()
+    {
+        ::SwapBuffers(m_Context);
+    }
+
+    WindowsOpenGLContext::~WindowsOpenGLContext()
+    {
+        wglMakeCurrent(m_Context, NULL);
+        wglDeleteContext(m_OpenGLContext);
+        ReleaseDC(m_Window->m_Window, m_Context);
+    }
+
     WindowsWindow::WindowsWindow(
         const std::wstring& title,
         uint16_t width,
@@ -58,7 +120,16 @@ namespace awml {
         ShowWindow(m_Window, SW_NORMAL);
     }
 
-    void WindowsWindow::PollEvents()
+    void WindowsWindow::SetContext(window_context wc)
+    {
+        m_Context.reset(wc.release());
+
+        m_Context->Setup(this);
+
+        m_Context->Activate();
+    }
+
+    void WindowsWindow::Update()
     {
         auto message = MSG();
         while (PeekMessageW(&message, NULL, 0, 0, PM_REMOVE))
@@ -66,6 +137,9 @@ namespace awml {
             TranslateMessage(&message);
             DispatchMessageW(&message);
         }
+
+        if (m_Context)
+            m_Context->SwapBuffers();
     }
 
     bool WindowsWindow::ShouldClose()

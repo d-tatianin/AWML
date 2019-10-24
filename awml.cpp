@@ -7,11 +7,26 @@ namespace awml {
     Window::SharedWindow Window::Create(
         const std::wstring& title,
         uint16_t width,
-        uint16_t height
+        uint16_t height,
+        Context context
     )
     {
       #ifdef _WIN32
-        return std::make_shared<WindowsWindow>(title, width, height);
+        auto window = std::make_shared<WindowsWindow>(title, width, height);
+
+        switch (context)
+        {
+        case Context::NONE:
+            return window;
+        case Context::OpenGL:
+            window->SetContext(
+                std::make_unique<WindowsOpenGLContext>()
+            );
+            return window;
+        default:
+            return window;
+        }
+
       #endif
     }
 }

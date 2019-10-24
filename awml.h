@@ -6,6 +6,12 @@
 
 namespace awml {
 
+    enum class Context
+    {
+        NONE   = 0,
+        OpenGL = 1
+    };
+
     // A callback that gets called when a key is pressed.
     // Parameters:
     // awml_keycode -> Key that was pressed.
@@ -65,6 +71,20 @@ namespace awml {
     typedef std::function<void(wchar_t)>
         char_typed_callback;
 
+    class Window;
+
+    class GraphicsContext
+    {
+    public:
+        virtual bool Setup(Window* self) = 0;
+        virtual bool Activate() = 0;
+        virtual void SwapBuffers() = 0;
+        virtual ~GraphicsContext() {}
+    };
+
+    typedef std::unique_ptr<GraphicsContext>
+        window_context;
+
     class Window
     {
     public:
@@ -74,13 +94,18 @@ namespace awml {
         static SharedWindow Create(
             const std::wstring& title,
             uint16_t width,
-            uint16_t height
+            uint16_t height,
+            Context context
         );
 
         Window(const Window& other) = delete;
         Window& operator=(const Window& other) = delete;
     protected:
         Window() {}
+
+        virtual void SetContext(
+            window_context wc
+        ) = 0;
     public:
         virtual void OnKeyPressedFunc(
             key_pressed_callback cb
@@ -118,7 +143,7 @@ namespace awml {
             char_typed_callback cb
         ) = 0;
 
-        virtual void PollEvents() = 0;
+        virtual void Update() = 0;
 
         virtual bool ShouldClose() = 0;
 

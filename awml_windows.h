@@ -10,8 +10,29 @@
 
 namespace awml {
 
+    class WindowsWindow;
+
+    class WindowsOpenGLContext : public GraphicsContext
+    {
+    private:
+        HDC m_Context;
+        HGLRC m_OpenGLContext;
+        WindowsWindow* m_Window;
+        int m_Format;
+    public:
+        WindowsOpenGLContext();
+
+        bool Setup(Window* self) override;
+        bool Activate() override;
+        void SwapBuffers() override;
+
+        ~WindowsOpenGLContext();
+    };
+
     class WindowsWindow : public Window
     {
+    private:
+        friend class WindowsOpenGLContext;
     private:
         static HINSTANCE s_ThisInstance;
         static uint16_t  s_WindowID;
@@ -20,6 +41,8 @@ namespace awml {
         std::wstring m_WindowTitle;
         WNDCLASSW m_WinProps;
         HWND m_Window;
+
+        window_context m_Context;
 
         uint16_t m_Width;
         uint16_t m_Height;
@@ -45,7 +68,9 @@ namespace awml {
             uint16_t height
         );
 
-        void PollEvents() override;
+        void SetContext(window_context wc) override;
+
+        void Update() override;
 
         bool ShouldClose() override;
 

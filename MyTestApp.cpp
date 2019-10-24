@@ -1,10 +1,13 @@
 #include <iostream>
 
+#include <Windows.h>
+#include <gl/GL.h>
+
 #include "awml.h"
 
 int main()
 {
-    auto window = awml::Window::Create(L"My Window", 1280, 720);
+    auto window = awml::Window::Create(L"My Window", 1280, 720, awml::Context::OpenGL);
 
     window->OnKeyPressedFunc(
         [](awml_keycode key_code, bool repeated, uint16_t repeat_count)
@@ -84,6 +87,21 @@ int main()
     window->OnMouseScrolledFunc(
         [](int16_t rotation, bool vertical)
         {
+            static float red = 0.0f;
+            static float green = 0.2f;
+            static float blue = 0.5f;
+
+            if (rotation > 0.0f)
+            {
+                red += 0.1f;
+            }
+            else
+            {
+                red -= 0.1f;
+            }
+
+            glClearColor(red, green, blue, 1.0f);
+
             std::cout << "Mouse scrolled "
                 << rotation
                 << (vertical ?
@@ -105,6 +123,7 @@ int main()
 
     while (!window->ShouldClose())
     {
-        window->PollEvents();
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        window->Update();
     }
 }
