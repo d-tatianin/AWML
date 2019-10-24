@@ -1,9 +1,6 @@
 #include <iostream>
 
-#include <Windows.h>
-#include <gl/GL.h>
-
-#include "awml.h"
+#include <AWML/awml.h>
 
 int main()
 {

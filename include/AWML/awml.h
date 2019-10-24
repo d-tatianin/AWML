@@ -2,7 +2,12 @@
 #include <functional>
 #include <memory>
 
-#include "utilities.h"
+#ifdef _WIN32
+  #include <windows.h>
+  #include <GL/gl.h>
+#endif
+
+#include "key_codes.h"
 
 namespace awml {
 

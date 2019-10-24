@@ -4,6 +4,8 @@
 
 #include "awml_windows.h"
 
+#include "utilities.h"
+
 #define AWML_WINDOWS_WINDOW_STYLE WS_OVERLAPPEDWINDOW
 
 namespace awml {

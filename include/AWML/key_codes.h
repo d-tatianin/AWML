@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #ifdef _WIN32
     // ---- Mouse buttons ----
     #define AWML_MB_LEFT      0x01
@@ -112,6 +114,8 @@
     #define AWML_RIGHT_SHIFT  0xA1
     #define AWML_LEFT_CTRL    0xA2
     #define AWML_RIGHT_CTRL   0xA3
+
+    typedef int32_t awml_keycode;
 #else
     #error Sorry, your platform is currently not supported!
 #endif
