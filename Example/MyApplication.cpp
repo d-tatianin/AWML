@@ -7,8 +7,13 @@ int main()
     auto window = awml::Window::Create(L"My Window", 1280, 720, awml::Context::OpenGL);
 
     window->OnKeyPressedFunc(
-        [](awml_keycode key_code, bool repeated, uint16_t repeat_count)
+        [&window](awml_keycode key_code, bool repeated, uint16_t repeat_count)
         {
+            if (key_code == AWML_KEY_F)
+                window->SetFullscreen(true);
+            else if (key_code == AWML_ESCAPE)
+                window->SetFullscreen(false);
+
             std::cout << "Key "
                 << key_code
                 << " pressed. Repeated ("

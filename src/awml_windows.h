@@ -47,6 +47,12 @@ namespace awml {
         uint16_t m_Width;
         uint16_t m_Height;
 
+        uint16_t m_TrueWidth;
+        uint16_t m_TrueHeight;
+
+        uint16_t m_NativeWidth;
+        uint16_t m_NativeHeight;
+
         uint16_t m_MouseX;
         uint16_t m_MouseY;
 
@@ -121,6 +127,8 @@ namespace awml {
         ) override;
 
         bool KeyPressed(awml_keycode key_code) override;
+
+        void SetFullscreen(bool mode) override;
 
         ~WindowsWindow();
     private:

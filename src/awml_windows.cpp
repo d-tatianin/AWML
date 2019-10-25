@@ -100,14 +100,20 @@ namespace awml {
         rect.bottom = height;
         AdjustWindowRect(&rect, AWML_WINDOWS_WINDOW_STYLE, false);
 
+        m_NativeWidth = GetSystemMetrics(SM_CXSCREEN);
+        m_NativeHeight = GetSystemMetrics(SM_CYSCREEN);
+
+        m_TrueWidth =  static_cast<uint16_t>(rect.right - rect.left);
+        m_TrueHeight = static_cast<uint16_t>(rect.bottom - rect.top);
+
         m_Window = CreateWindowExW(
             0,
             m_ClassName.c_str(),
             m_WindowTitle.c_str(),
             AWML_WINDOWS_WINDOW_STYLE,
             CW_USEDEFAULT, CW_USEDEFAULT,
-            rect.right - rect.left,
-            rect.bottom - rect.top,
+            m_TrueWidth,
+            m_TrueHeight,
             NULL,
             NULL,
             s_ThisInstance,
@@ -120,6 +126,96 @@ namespace awml {
         SetWindowLongPtrW(m_Window, 0, reinterpret_cast<LONG_PTR>(this));
 
         ShowWindow(m_Window, SW_NORMAL);
+    }
+
+    void WindowsWindow::SetFullscreen(bool mode)
+    {
+        static WINDOWPLACEMENT last_placement = { sizeof(last_placement) };
+
+        DWORD style = GetWindowLongW(m_Window, GWL_STYLE);
+
+        static bool resolution_changed = false;
+
+        if (mode && (style & WS_OVERLAPPEDWINDOW))
+        {
+            MONITORINFO monitor_info = { sizeof(monitor_info) };
+
+            GetMonitorInfoW(
+                MonitorFromWindow(
+                    m_Window,
+                    MONITOR_DEFAULTTOPRIMARY),
+                &monitor_info
+            );
+
+            if (m_Width < m_NativeWidth || m_Height < m_NativeHeight)
+            {
+                DEVMODE dm = {};
+                dm.dmPelsWidth = m_Width;
+                dm.dmPelsHeight = m_Height;
+                dm.dmBitsPerPel = 32;
+                dm.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
+                dm.dmSize = sizeof(dm);
+
+                ChangeDisplaySettings(&dm, 0);
+
+                resolution_changed = true;
+            }
+
+            GetWindowPlacement(m_Window, &last_placement);
+
+            GetMonitorInfoW(
+                MonitorFromWindow(
+                    m_Window,
+                    MONITOR_DEFAULTTOPRIMARY),
+                &monitor_info
+            );
+
+            SetWindowLongW(
+                m_Window,
+                GWL_STYLE,
+                style & ~WS_OVERLAPPEDWINDOW
+            );
+
+            SetWindowPos(
+                m_Window,
+                HWND_TOP,
+                monitor_info.rcMonitor.left, monitor_info.rcMonitor.top,
+                monitor_info.rcMonitor.right - monitor_info.rcMonitor.left,
+                monitor_info.rcMonitor.bottom - monitor_info.rcMonitor.top,
+                SWP_NOOWNERZORDER | SWP_FRAMECHANGED
+            );
+        }
+        
+        if (!mode)
+        {
+            if (resolution_changed)
+            {
+                DEVMODE dm = {};
+                dm.dmPelsWidth = m_NativeWidth;
+                dm.dmPelsHeight = m_NativeHeight;
+                dm.dmBitsPerPel = 32;
+                dm.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
+                dm.dmSize = sizeof(dm);
+
+                ChangeDisplaySettings(&dm, 0);
+
+                resolution_changed = false;
+            }
+
+            SetWindowLongW(
+                m_Window,
+                GWL_STYLE,
+                style | WS_OVERLAPPEDWINDOW
+            );
+            SetWindowPlacement(m_Window, &last_placement);
+            SetWindowPos(
+                m_Window,
+                NULL,
+                0, 0, 0, 0,
+                SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
+                SWP_NOOWNERZORDER | SWP_FRAMECHANGED
+            );
+        }
     }
 
     void WindowsWindow::SetContext(window_context wc)

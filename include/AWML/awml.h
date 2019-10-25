@@ -162,6 +162,8 @@ namespace awml {
 
         virtual bool KeyPressed(awml_keycode key_code) = 0;
 
+        virtual void SetFullscreen(bool mode) = 0;
+
         virtual ~Window() {}
     };
 }
