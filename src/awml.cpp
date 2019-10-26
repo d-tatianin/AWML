@@ -8,11 +8,20 @@ namespace awml {
         const std::wstring& title,
         uint16_t width,
         uint16_t height,
-        Context context
+        Context context,
+        bool resizable,
+        bool fullscreen
     )
     {
       #ifdef _WIN32
-        auto window = std::make_shared<WindowsWindow>(title, width, height);
+        auto window =
+            std::make_shared<WindowsWindow>(
+                title,
+                width,
+                height,
+                resizable,
+                fullscreen
+            );
 
         switch (context)
         {

@@ -4,14 +4,20 @@
 
 int main()
 {
-    auto window = awml::Window::Create(L"My Window", 1280, 720, awml::Context::OpenGL);
+    auto window = awml::Window::Create(
+        L"My Window",
+        1280, 720,
+        awml::Context::OpenGL,
+        false,
+        true
+    );
 
     window->OnKeyPressedFunc(
         [&window](awml_keycode key_code, bool repeated, uint16_t repeat_count)
         {
-            if (key_code == AWML_KEY_F)
+            if (key_code == AWML_F9)
                 window->SetFullscreen(true);
-            else if (key_code == AWML_ESCAPE)
+            else if (key_code == AWML_ESCAPE || key_code == AWML_F8)
                 window->SetFullscreen(false);
 
             std::cout << "Key "

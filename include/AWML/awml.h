@@ -100,7 +100,9 @@ namespace awml {
             const std::wstring& title,
             uint16_t width,
             uint16_t height,
-            Context context
+            Context context,
+            bool resizable = true,
+            bool fullscreen = false
         );
 
         Window(const Window& other) = delete;

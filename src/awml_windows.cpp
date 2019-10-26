@@ -6,8 +6,6 @@
 
 #include "utilities.h"
 
-#define AWML_WINDOWS_WINDOW_STYLE WS_OVERLAPPEDWINDOW
-
 namespace awml {
 
     WindowsOpenGLContext::WindowsOpenGLContext()
@@ -75,15 +73,25 @@ namespace awml {
     WindowsWindow::WindowsWindow(
         const std::wstring& title,
         uint16_t width,
-        uint16_t height
+        uint16_t height,
+        bool resizable,
+        bool fullscreen
     ) : m_ClassName(title),
         m_WindowTitle(title),
         m_WinProps(),
         m_Window(),
-        m_Width(0),
-        m_Height(0),
+        m_WindowStyle(0),
+        m_OriginalWidth(width),
+        m_OriginalHeight(height),
+        m_RunningWidth(width),
+        m_RunningHeight(height),
+        m_TrueWidth(0),
+        m_TrueHeight(0),
+        m_NativeWidth(0),
+        m_NativeHeight(0),
         m_MouseX(0),
         m_MouseY(0),
+        m_FullScreen(fullscreen),
         m_ShouldClose(false)
     {
         m_ClassName += std::to_wstring(s_WindowID++);
@@ -94,23 +102,27 @@ namespace awml {
         m_WinProps.cbWndExtra = sizeof(WindowsWindow*);
         RegisterClassW(&m_WinProps);
 
+        if (resizable)
+            m_WindowStyle = WS_OVERLAPPEDWINDOW;
+        else
+            m_WindowStyle = WS_OVERLAPPEDWINDOW ^ WS_THICKFRAME;
+
         RECT rect;
         rect.left = rect.top = 0;
         rect.right = width;
         rect.bottom = height;
-        AdjustWindowRect(&rect, AWML_WINDOWS_WINDOW_STYLE, false);
-
-        m_NativeWidth = GetSystemMetrics(SM_CXSCREEN);
-        m_NativeHeight = GetSystemMetrics(SM_CYSCREEN);
+        AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, false);
 
         m_TrueWidth =  static_cast<uint16_t>(rect.right - rect.left);
         m_TrueHeight = static_cast<uint16_t>(rect.bottom - rect.top);
+
+        RecalculateNative();
 
         m_Window = CreateWindowExW(
             0,
             m_ClassName.c_str(),
             m_WindowTitle.c_str(),
-            AWML_WINDOWS_WINDOW_STYLE,
+            m_WindowStyle,
             CW_USEDEFAULT, CW_USEDEFAULT,
             m_TrueWidth,
             m_TrueHeight,
@@ -125,6 +137,8 @@ namespace awml {
 
         SetWindowLongPtrW(m_Window, 0, reinterpret_cast<LONG_PTR>(this));
 
+        if (m_FullScreen) SetFullscreen(true);
+
         ShowWindow(m_Window, SW_NORMAL);
     }
 
@@ -136,8 +150,10 @@ namespace awml {
 
         static bool resolution_changed = false;
 
-        if (mode && (style & WS_OVERLAPPEDWINDOW))
+        if (mode && (style & m_WindowStyle))
         {
+            m_FullScreen = true;
+
             MONITORINFO monitor_info = { sizeof(monitor_info) };
 
             GetMonitorInfoW(
@@ -147,11 +163,11 @@ namespace awml {
                 &monitor_info
             );
 
-            if (m_Width < m_NativeWidth || m_Height < m_NativeHeight)
+            if (m_OriginalWidth < m_NativeWidth || m_OriginalHeight < m_NativeHeight)
             {
                 DEVMODE dm = {};
-                dm.dmPelsWidth = m_Width;
-                dm.dmPelsHeight = m_Height;
+                dm.dmPelsWidth = m_OriginalWidth;
+                dm.dmPelsHeight = m_OriginalHeight;
                 dm.dmBitsPerPel = 32;
                 dm.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
                 dm.dmSize = sizeof(dm);
@@ -188,6 +204,8 @@ namespace awml {
         
         if (!mode)
         {
+            m_FullScreen = false;
+
             if (resolution_changed)
             {
                 DEVMODE dm = {};
@@ -205,7 +223,7 @@ namespace awml {
             SetWindowLongW(
                 m_Window,
                 GWL_STYLE,
-                style | WS_OVERLAPPEDWINDOW
+                style | m_WindowStyle
             );
             SetWindowPlacement(m_Window, &last_placement);
             SetWindowPos(
@@ -256,12 +274,12 @@ namespace awml {
 
     uint16_t WindowsWindow::Width()
     {
-        return m_Width;
+        return m_RunningWidth;
     }
 
     uint16_t WindowsWindow::Height()
     {
-        return m_Height;
+        return m_RunningHeight;
     }
 
     uint16_t WindowsWindow::MouseX()
@@ -329,10 +347,32 @@ namespace awml {
         Close();
     }
 
+    void WindowsWindow::RecalculateNative()
+    {
+        MONITORINFO monitor_info = { sizeof(monitor_info) };
+
+        GetMonitorInfoW(
+            MonitorFromWindow(
+            m_Window,
+            MONITOR_DEFAULTTOPRIMARY
+            ), &monitor_info
+        );
+
+        m_NativeWidth = static_cast<uint16_t>(
+            monitor_info.rcMonitor.right
+            - monitor_info.rcMonitor.left
+            );
+
+        m_NativeHeight = static_cast<uint16_t>(
+            monitor_info.rcMonitor.bottom
+            - monitor_info.rcMonitor.top
+        );
+    }
+
     void WindowsWindow::OnWindowResized(WORD width, WORD height)
     {
-        m_Width = width;
-        m_Height = height;
+        m_RunningWidth = width;
+        m_RunningHeight = height;
 
         if (m_WindowResizedCB)
             m_WindowResizedCB(width, height);
@@ -340,6 +380,11 @@ namespace awml {
 
     void WindowsWindow::OnWindowClosed()
     {
+        if (m_FullScreen)
+        {
+            SetResolution(m_NativeWidth, m_NativeHeight);
+        }
+
         if (m_WindowClosedCB)
             m_WindowClosedCB();
     }
@@ -409,6 +454,18 @@ namespace awml {
             m_CharTypedCB(typed_char);
     }
 
+    void WindowsWindow::SetResolution(uint16_t width, uint16_t height)
+    {
+        DEVMODE dm = {};
+        dm.dmPelsWidth = width;
+        dm.dmPelsHeight = height;
+        dm.dmBitsPerPel = 32;
+        dm.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
+        dm.dmSize = sizeof(dm);
+
+        ChangeDisplaySettings(&dm, 0);
+    }
+
     LRESULT CALLBACK WindowsWindow::WindowEventHandler(
         HWND window,
         UINT message,
@@ -435,6 +492,37 @@ namespace awml {
                 LOWORD(param_2),
                 HIWORD(param_2)
             );
+            return 0;
+        case WM_KILLFOCUS:
+            if (owner->m_FullScreen)
+            {
+                owner->SetResolution(
+                    owner->m_NativeWidth,
+                    owner->m_NativeHeight
+                );
+
+                ShowWindow(
+                    owner->m_Window,
+                    SW_MINIMIZE
+                );
+            }
+            return 0;
+        case WM_SETFOCUS:
+            if (owner->m_FullScreen)
+            {
+                owner->SetResolution(
+                    owner->m_OriginalWidth,
+                    owner->m_OriginalHeight
+                );
+
+                ShowWindow(
+                    owner->m_Window,
+                    SW_RESTORE
+                );
+            }
+        case WM_MOVE:
+            if(!(owner->m_FullScreen))
+                owner->RecalculateNative();
             return 0;
         case WM_MOUSEMOVE:
             owner->OnMouseMoved(

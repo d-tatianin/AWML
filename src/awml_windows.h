@@ -42,10 +42,15 @@ namespace awml {
         WNDCLASSW m_WinProps;
         HWND m_Window;
 
+        uint32_t m_WindowStyle;
+
         window_context m_Context;
 
-        uint16_t m_Width;
-        uint16_t m_Height;
+        uint16_t m_OriginalWidth;
+        uint16_t m_OriginalHeight;
+
+        uint16_t m_RunningWidth;
+        uint16_t m_RunningHeight;
 
         uint16_t m_TrueWidth;
         uint16_t m_TrueHeight;
@@ -56,6 +61,7 @@ namespace awml {
         uint16_t m_MouseX;
         uint16_t m_MouseY;
 
+        bool m_FullScreen;
         bool m_ShouldClose;
 
         key_pressed_callback    m_KeyPressedCB;
@@ -71,7 +77,9 @@ namespace awml {
         WindowsWindow(
             const std::wstring& title,
             uint16_t width,
-            uint16_t height
+            uint16_t height,
+            bool resizable,
+            bool fullscreen
         );
 
         void SetContext(window_context wc) override;
@@ -132,6 +140,10 @@ namespace awml {
 
         ~WindowsWindow();
     private:
+        void SetResolution(uint16_t width, uint16_t height);
+
+        void RecalculateNative();
+
         void OnWindowResized(WORD width, WORD height);
 
         void OnWindowClosed();
