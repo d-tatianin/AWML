@@ -111,7 +111,7 @@ namespace awml {
         rect.left = rect.top = 0;
         rect.right = width;
         rect.bottom = height;
-        AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, false);
+        AdjustWindowRect(&rect, m_WindowStyle, false);
 
         m_TrueWidth =  static_cast<uint16_t>(rect.right - rect.left);
         m_TrueHeight = static_cast<uint16_t>(rect.bottom - rect.top);
@@ -201,7 +201,7 @@ namespace awml {
                 SWP_NOOWNERZORDER | SWP_FRAMECHANGED
             );
         }
-        
+
         if (!mode && m_FullScreen)
         {
             m_FullScreen = false;
@@ -423,11 +423,38 @@ namespace awml {
 
     void WindowsWindow::OnWindowResized(WORD width, WORD height)
     {
+        // We have to check whether resizing
+        // was set to true before because
+        // making the window fullscreen
+        // changes the resolution twice,
+        // but we only want to get one event.
+        static bool resizing = false;
+
+        if (m_FullScreen && !resizing)
+        {
+            resizing = true;
+            return;
+        }
+
+        if (m_FullScreen &&
+          ((m_RunningWidth == width) &&
+           (m_RunningHeight == height)))
+        {
+            resizing = false;
+            return;
+        }
+
+        if ((m_RunningWidth == width) &&
+            (m_RunningHeight == height))
+            return;
+
         m_RunningWidth = width;
         m_RunningHeight = height;
 
         if (m_WindowResizedCB)
             m_WindowResizedCB(width, height);
+
+        resizing = false;
     }
 
     void WindowsWindow::OnWindowClosed()
@@ -531,18 +558,73 @@ namespace awml {
 
         switch (message)
         {
-        case WM_DESTROY:
-            owner->OnWindowClosed();
-            return 0;
-        case WM_CLOSE:
-            owner->m_ShouldClose = true;
-            return 0;
+        case WM_MOUSEMOVE:
+            owner->OnMouseMoved(
+                GET_X_LPARAM(param_2),
+                GET_Y_LPARAM(param_2)
+            );
+            break;
+        case WM_LBUTTONDOWN:
+            owner->OnMousePressed(awml_key::MOUSE_LEFT);
+            break;
+        case WM_MBUTTONDOWN:
+            owner->OnMousePressed(awml_key::MOUSE_MIDDLE);
+            break;
+        case WM_RBUTTONDOWN:
+            owner->OnMousePressed(awml_key::MOUSE_RIGHT);
+            break;
+        case WM_XBUTTONDOWN:
+            if (HIWORD(param_1) & AWML_MOUSE_X1_BIT)
+                owner->OnMousePressed(awml_key::MOUSE_X1);
+            else if (HIWORD(param_1) & AWML_MOUSE_X2_BIT)
+                owner->OnMousePressed(awml_key::MOUSE_X2);
+            break;
+        case WM_LBUTTONUP:
+            owner->OnMouseReleased(awml_key::MOUSE_LEFT);
+            break;
+        case WM_MBUTTONUP:
+            owner->OnMouseReleased(awml_key::MOUSE_MIDDLE);
+            break;
+        case WM_RBUTTONUP:
+            owner->OnMouseReleased(awml_key::MOUSE_RIGHT);
+            break;
+        case WM_XBUTTONUP:
+            if (HIWORD(param_1) & AWML_MOUSE_X1_BIT)
+                owner->OnMouseReleased(awml_key::MOUSE_X1);
+            else if (HIWORD(param_1) & AWML_MOUSE_X2_BIT)
+                owner->OnMouseReleased(awml_key::MOUSE_X2);
+            break;
+        case WM_MOUSEWHEEL:
+            owner->OnMouseScrolled(
+                GET_WHEEL_DELTA_WPARAM(param_1),
+                true
+            );
+            break;
+        case WM_MOUSEHWHEEL:
+            owner->OnMouseScrolled(
+                GET_WHEEL_DELTA_WPARAM(param_1),
+                false
+            );
+            break;
+        case WM_KEYDOWN:
+            owner->OnKeyPressed(
+                param_1,
+                param_2 & AWML_REPEATED_BIT,
+                param_2 & AWML_REPEAT_COUNT_MASK
+            );
+            break;
+        case WM_KEYUP:
+            owner->OnKeyReleased(param_1);
+            break;
+        case WM_CHAR:
+            owner->OnCharTyped(static_cast<wchar_t>(param_1));
+            break;
         case WM_SIZE:
             owner->OnWindowResized(
                 LOWORD(param_2),
                 HIWORD(param_2)
             );
-            return 0;
+            break;
         case WM_KILLFOCUS:
             if (owner->m_FullScreen)
             {
@@ -556,7 +638,7 @@ namespace awml {
                     SW_MINIMIZE
                 );
             }
-            return 0;
+            break;
         case WM_SETFOCUS:
             if (owner->m_FullScreen)
             {
@@ -573,71 +655,18 @@ namespace awml {
         case WM_MOVE:
             if(!(owner->m_FullScreen))
                 owner->RecalculateNative();
-            return 0;
-        case WM_MOUSEMOVE:
-            owner->OnMouseMoved(
-                GET_X_LPARAM(param_2),
-                GET_Y_LPARAM(param_2)
-            );
-            return 0;
-        case WM_LBUTTONDOWN:
-            owner->OnMousePressed(awml_key::MOUSE_LEFT);
-            return 0;
-        case WM_MBUTTONDOWN:
-            owner->OnMousePressed(awml_key::MOUSE_MIDDLE);
-            return 0;
-        case WM_RBUTTONDOWN:
-            owner->OnMousePressed(awml_key::MOUSE_RIGHT);
-            return 0;
-        case WM_XBUTTONDOWN:
-            if (HIWORD(param_1) & AWML_MOUSE_X1_BIT)
-                owner->OnMousePressed(awml_key::MOUSE_X1);
-            else if(HIWORD(param_1) & AWML_MOUSE_X2_BIT)
-                owner->OnMousePressed(awml_key::MOUSE_X2);
-            return 0;
-        case WM_LBUTTONUP:
-            owner->OnMouseReleased(awml_key::MOUSE_LEFT);
-            return 0;
-        case WM_MBUTTONUP:
-            owner->OnMouseReleased(awml_key::MOUSE_MIDDLE);
-            return 0;
-        case WM_RBUTTONUP:
-            owner->OnMouseReleased(awml_key::MOUSE_RIGHT);
-            return 0;
-        case WM_XBUTTONUP:
-            if (HIWORD(param_1) & AWML_MOUSE_X1_BIT)
-                owner->OnMouseReleased(awml_key::MOUSE_X1);
-            else if (HIWORD(param_1) & AWML_MOUSE_X2_BIT)
-                owner->OnMouseReleased(awml_key::MOUSE_X2);
-            return 0;
-        case WM_MOUSEWHEEL:
-            owner->OnMouseScrolled(
-                GET_WHEEL_DELTA_WPARAM(param_1),
-                true
-            );
-            return 0;
-        case WM_MOUSEHWHEEL:
-            owner->OnMouseScrolled(
-                GET_WHEEL_DELTA_WPARAM(param_1),
-                false
-            );
-            return 0;
-        case WM_KEYDOWN:
-            owner->OnKeyPressed(
-                param_1,
-                param_2 & AWML_REPEATED_BIT,
-                param_2 & AWML_REPEAT_COUNT_MASK
-            );
-            return 0;
-        case WM_KEYUP:
-            owner->OnKeyReleased(param_1);
-            return 0;
-        case WM_CHAR:
-            owner->OnCharTyped(static_cast<wchar_t>(param_1));
-            return 0;
-        default:
+            break;
+        AWML_UNLIKELY case WM_DESTROY:
+            owner->OnWindowClosed();
+            break;
+        AWML_UNLIKELY case WM_CLOSE:
+            owner->m_ShouldClose = true;
+            break;
+        AWML_LIKELY default:
             return DefWindowProcW(window, message, param_1, param_2);
         }
+
+        return 0;
     }
 
     HINSTANCE WindowsWindow::s_ThisInstance = GetModuleHandleW(NULL);

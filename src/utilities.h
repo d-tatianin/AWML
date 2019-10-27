@@ -2,6 +2,14 @@
 
 #include <cstddef>
 
+#if _MSVC_LANG > 201703L || __cplusplus > 201703L
+    #define AWML_LIKELY   [[likely]]
+    #define AWML_UNLIKELY [[unlikely]]
+#else
+    #define AWML_LIKELY
+    #define AWML_UNLIKELY
+#endif
+
 #ifdef _WIN32
     #define AWML_REPEATED_BIT      0x40000000
     #define AWML_KEY_PRESSED_BIT   0x8000
