@@ -19,16 +19,16 @@ namespace awml {
 
     // A callback that gets called when a key is pressed.
     // Parameters:
-    // awml_keycode -> Key that was pressed.
+    // awml_key -> Key that was pressed.
     // bool -> Whether it's a repeated event.
     // uint16_t -> Repeat count (usually 1 if polled often enough).
-    typedef std::function<void(awml_keycode, bool, uint16_t)>
+    typedef std::function<void(awml_key, bool, uint16_t)>
         key_pressed_callback;
 
     // A callback that gets called when a key is released.
     // Parameters:
-    // awml_keycode -> Key that was released.
-    typedef std::function<void(awml_keycode)>
+    // awml_key -> Key that was released.
+    typedef std::function<void(awml_key)>
         key_released_callback;
 
     // A callback that gets called whenever window is resized
@@ -53,14 +53,14 @@ namespace awml {
 
     // A callback that gets called whenever a mouse button is pressed.
     // Parameters:
-    // awml_keycode -> Mouse button that was pressed. 
-    typedef std::function<void(awml_keycode)>
+    // awml_key -> Mouse button that was pressed. 
+    typedef std::function<void(awml_key)>
         mouse_pressed_callback;
 
     // A callback that gets called whenever a mouse button is released.
     // Parameters:
-    // awml_keycode -> Mouse button that was released. 
-    typedef std::function<void(awml_keycode)>
+    // awml_key -> Mouse button that was released. 
+    typedef std::function<void(awml_key)>
         mouse_released_callback;
 
     // A callback that gets called when mouse wheel is scrolled.
@@ -167,7 +167,7 @@ namespace awml {
         virtual void CaptureCursor(bool mode) = 0;
         virtual void HideCursor(bool mode) = 0;
 
-        virtual bool KeyPressed(awml_keycode key_code) = 0;
+        virtual bool KeyPressed(awml_key key_code) = 0;
 
         virtual void SetFullscreen(bool mode) = 0;
 

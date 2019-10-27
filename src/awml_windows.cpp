@@ -337,9 +337,10 @@ namespace awml {
         m_CharTypedCB = cb;
     }
 
-    bool WindowsWindow::KeyPressed(awml_keycode key_code)
+    bool WindowsWindow::KeyPressed(awml_key key_code)
     {
-        return AWML_KEY_PRESSED_BIT & GetKeyState(key_code);
+        return AWML_KEY_PRESSED_BIT &
+            GetKeyState(static_cast<int>(key_code));
     }
 
     bool WindowsWindow::Minimized()
@@ -454,20 +455,16 @@ namespace awml {
         }
     }
 
-    void WindowsWindow::OnMousePressed(UINT code)
+    void WindowsWindow::OnMousePressed(awml_key code)
     {
         if (m_MousePressedCB)
-            m_MousePressedCB(
-                static_cast<awml_keycode>(code)
-            );
+            m_MousePressedCB(code);
     }
 
-    void WindowsWindow::OnMouseReleased(UINT code)
+    void WindowsWindow::OnMouseReleased(awml_key code)
     {
         if (m_MouseReleasedCB)
-            m_MouseReleasedCB(
-                static_cast<awml_keycode>(code)
-            );
+            m_MouseReleasedCB(code);
     }
 
     void WindowsWindow::OnMouseScrolled(int16_t rotation, bool vertical)
@@ -486,7 +483,7 @@ namespace awml {
     {
         if (m_KeyPressedCB)
             m_KeyPressedCB(
-                static_cast<awml_keycode>(key_code),
+                static_cast<awml_key>(key_code),
                 repeated, repeat_count
             );
     }
@@ -495,7 +492,7 @@ namespace awml {
     {
         if (m_KeyReleasedCB)
             m_KeyReleasedCB(
-                static_cast<awml_keycode>(key_code)
+                static_cast<awml_key>(key_code)
             );
     }
 
@@ -525,7 +522,9 @@ namespace awml {
     )
     {
         WindowsWindow* owner =
-            reinterpret_cast<WindowsWindow*>(GetWindowLongPtrW(window, 0));
+            reinterpret_cast<WindowsWindow*>(
+                GetWindowLongPtrW(window, 0)
+                );
 
         if (!owner)
             return DefWindowProcW(window, message, param_1, param_2);
@@ -582,22 +581,34 @@ namespace awml {
             );
             return 0;
         case WM_LBUTTONDOWN:
-            owner->OnMousePressed(AWML_MB_LEFT);
+            owner->OnMousePressed(awml_key::MOUSE_LEFT);
             return 0;
         case WM_MBUTTONDOWN:
-            owner->OnMousePressed(AWML_MB_MIDDLE);
+            owner->OnMousePressed(awml_key::MOUSE_MIDDLE);
             return 0;
         case WM_RBUTTONDOWN:
-            owner->OnMousePressed(AWML_MB_RIGHT);
+            owner->OnMousePressed(awml_key::MOUSE_RIGHT);
+            return 0;
+        case WM_XBUTTONDOWN:
+            if (HIWORD(param_1) & AWML_MOUSE_X1_BIT)
+                owner->OnMousePressed(awml_key::MOUSE_X1);
+            else if(HIWORD(param_1) & AWML_MOUSE_X2_BIT)
+                owner->OnMousePressed(awml_key::MOUSE_X2);
             return 0;
         case WM_LBUTTONUP:
-            owner->OnMouseReleased(AWML_MB_LEFT);
+            owner->OnMouseReleased(awml_key::MOUSE_LEFT);
             return 0;
         case WM_MBUTTONUP:
-            owner->OnMouseReleased(AWML_MB_MIDDLE);
+            owner->OnMouseReleased(awml_key::MOUSE_MIDDLE);
             return 0;
         case WM_RBUTTONUP:
-            owner->OnMouseReleased(AWML_MB_RIGHT);
+            owner->OnMouseReleased(awml_key::MOUSE_RIGHT);
+            return 0;
+        case WM_XBUTTONUP:
+            if (HIWORD(param_1) & AWML_MOUSE_X1_BIT)
+                owner->OnMouseReleased(awml_key::MOUSE_X1);
+            else if (HIWORD(param_1) & AWML_MOUSE_X2_BIT)
+                owner->OnMouseReleased(awml_key::MOUSE_X2);
             return 0;
         case WM_MOUSEWHEEL:
             owner->OnMouseScrolled(

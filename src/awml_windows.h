@@ -140,7 +140,7 @@ namespace awml {
 
         void HideCursor(bool mode) override;
 
-        bool KeyPressed(awml_keycode key_code) override;
+        bool KeyPressed(awml_key key_code) override;
 
         void SetFullscreen(bool mode) override;
 
@@ -156,9 +156,9 @@ namespace awml {
 
         void OnMouseMoved(WORD xpos, WORD ypos);
 
-        void OnMousePressed(UINT code);
+        void OnMousePressed(awml_key code);
 
-        void OnMouseReleased(UINT code);
+        void OnMouseReleased(awml_key code);
 
         void OnMouseScrolled(int16_t rotation, bool vertical);
 

@@ -3,119 +3,129 @@
 #include <cstdint>
 
 #ifdef _WIN32
-    // ---- Mouse buttons ----
-    #define AWML_MB_LEFT      0x01
-    #define AWML_MB_RIGHT     0x02
-    #define AWML_MB_MIDDLE    0x04
 
-    // ---- Misc keyboard keys ----
-    #define AWML_BACKSPACE    0x08
-    #define AWML_TAB          0x09
-    #define AWML_ENTER        0x0D
-    #define AWML_SHIFT        0x10
-    #define AWML_CONTROL      0x11
-    #define AWML_ALT          0x12
-    #define AWML_PAUSE        0x13
-    #define AWML_CAPSLOCK     0x14
-    #define AWML_ESCAPE       0x1B
-    #define AWML_SPACEBAR     0x20
-    #define AWML_PAGEUP       0x21
-    #define AWML_PAGEDOWN     0x22
-    #define AWML_END          0x23
-    #define AWML_HOME         0x24
+    #include <winuser.h>
 
-    // ---- Arrow keys ----
-    #define AWML_LEFT         0x25
-    #define AWML_UP           0x26
-    #define AWML_RIGHT        0x27
-    #define AWML_DOWN         0x28
+    enum class awml_key : uint16_t
+    {
+        // ---- Mouse buttons ----
+        MOUSE_LEFT   = VK_LBUTTON,
+        MOUSE_RIGHT  = VK_RBUTTON,
+        MOUSE_MIDDLE = VK_MBUTTON,
+        MOUSE_X1     = VK_XBUTTON1,
+        MOUSE_X2     = VK_XBUTTON2,
+        
+        // ---- Misc keyboard keys ----
+        BACKSPACE    = VK_BACK,
+        TAB          = VK_TAB,
+        ENTER        = VK_RETURN,
+        SHIFT        = VK_SHIFT,
+        CONTROL      = VK_CONTROL,
+        ALT          = VK_MENU,
+        PAUSE        = VK_PAUSE,
+        CAPSLOCK     = VK_CAPITAL,
+        ESCAPE       = VK_ESCAPE,
+        SPACEBAR     = VK_SPACE,
+        PAGEUP       = VK_PRIOR,
+        PAGEDOWN     = VK_NEXT,
+        END          = VK_END,
+        HOME         = VK_HOME,
+        
+        // ---- Arrow keys ----
+        LEFT         = VK_LEFT,
+        UP           = VK_UP,
+        RIGHT        = VK_RIGHT,
+        DOWN         = VK_DOWN,
+        
+        // ---- Misc keyboard ----
+        PRINTSCREEN  = VK_SNAPSHOT,
+        INSERT       = VK_INSERT,
+        DEL          = VK_DELETE,
 
-    // ---- Misc keyboard ----
-    #define AWML_PRINTSCREEN  0x2C
-    #define AWML_INSERT       0x2D
-    #define AWML_DELETE       0x2E
+        // ---- Keyboard numbers ----
+        _0        = 0x30,
+        _1        = 0x31,
+        _2        = 0x32,
+        _3        = 0x33,
+        _4        = 0x34,
+        _5        = 0x35,
+        _6        = 0x36,
+        _7        = 0x37,
+        _8        = 0x38,
+        _9        = 0x39,
+        
+        // ---- Keyboard letters ----
+        A        = 0x41,
+        B        = 0x42,
+        C        = 0x43,
+        D        = 0x44,
+        E        = 0x45,
+        F        = 0x46,
+        G        = 0x47,
+        H        = 0x48,
+        I        = 0x49,
+        J        = 0x4A,
+        K        = 0x4B,
+        L        = 0x4C,
+        M        = 0x4D,
+        N        = 0x4E,
+        O        = 0x4F,
+        P        = 0x50,
+        Q        = 0x51,
+        R        = 0x52,
+        S        = 0x53,
+        T        = 0x54,
+        U        = 0x55,
+        V        = 0x56,
+        W        = 0x57,
+        X        = 0x58,
+        Y        = 0x59,
+        Z        = 0x5A,
 
-    // ---- Keyboard numbers ----
-    #define AWML_KEY_0        0x30
-    #define AWML_KEY_1        0x31
-    #define AWML_KEY_2        0x32
-    #define AWML_KEY_3        0x33
-    #define AWML_KEY_4        0x34
-    #define AWML_KEY_5        0x35
-    #define AWML_KEY_6        0x36
-    #define AWML_KEY_7        0x37
-    #define AWML_KEY_8        0x38
-    #define AWML_KEY_9        0x39
-
-    // ---- Keyboard letters ----
-    #define AWML_KEY_A        0x41
-    #define AWML_KEY_B        0x42
-    #define AWML_KEY_C        0x43
-    #define AWML_KEY_D        0x44
-    #define AWML_KEY_E        0x45
-    #define AWML_KEY_F        0x46
-    #define AWML_KEY_G        0x47
-    #define AWML_KEY_H        0x48
-    #define AWML_KEY_I        0x49
-    #define AWML_KEY_J        0x4A
-    #define AWML_KEY_K        0x4B
-    #define AWML_KEY_L        0x4C
-    #define AWML_KEY_M        0x4D
-    #define AWML_KEY_N        0x4E
-    #define AWML_KEY_O        0x4F
-    #define AWML_KEY_P        0x50
-    #define AWML_KEY_Q        0x51
-    #define AWML_KEY_R        0x52
-    #define AWML_KEY_S        0x53
-    #define AWML_KEY_T        0x54
-    #define AWML_KEY_U        0x55
-    #define AWML_KEY_V        0x56
-    #define AWML_KEY_W        0x57
-    #define AWML_KEY_X        0x58
-    #define AWML_KEY_Y        0x59
-    #define AWML_KEY_Z        0x5A
-
-    // ---- Numpad keys ----
-    #define AWML_NP_0         0x60
-    #define AWML_NP_1         0x61
-    #define AWML_NP_2         0x62
-    #define AWML_NP_3         0x63
-    #define AWML_NP_4         0x64
-    #define AWML_NP_5         0x65
-    #define AWML_NP_6         0x66
-    #define AWML_NP_7         0x67
-    #define AWML_NP_8         0x68
-    #define AWML_NP_9         0x69
-    #define AWML_NP_MULTIPLY  0x6A
-    #define AWML_NP_ADD       0x6B
-    #define AWML_NP_SEPARATOR 0x6C
-    #define AWML_NP_SUBTRACT  0x6D
-    #define AWML_NP_DECIMAL   0x6E
-    #define AWML_NP_DIVIDE    0x6F
-
-    // ---- Function keys ----
-    #define AWML_F1           0x70
-    #define AWML_F2           0x71
-    #define AWML_F3           0x72
-    #define AWML_F4           0x73 
-    #define AWML_F5           0x74
-    #define AWML_F6           0x75
-    #define AWML_F7           0x76
-    #define AWML_F8           0x77
-    #define AWML_F9           0x78
-    #define AWML_F10          0x79
-    #define AWML_F11          0x7A
-    #define AWML_F12          0x7B
-
-    // ---- Shift/ctrl/etc keys ----
-    #define AWML_NUMLOCK      0x90
-    #define AWML_SCRLLOCK     0x91
-    #define AWML_LEFT_SHIFT   0xA0
-    #define AWML_RIGHT_SHIFT  0xA1
-    #define AWML_LEFT_CTRL    0xA2
-    #define AWML_RIGHT_CTRL   0xA3
-
-    typedef int32_t awml_keycode;
+        // ---- SUPER (system-specific) ----
+        SUPER_LEFT  = VK_LWIN,
+        SUPER_RIGHT = VK_RWIN,
+        
+        // ---- Numpad keys ----
+        NP_0         = VK_NUMPAD0,
+        NP_1         = VK_NUMPAD1,
+        NP_2         = VK_NUMPAD2,
+        NP_3         = VK_NUMPAD3,
+        NP_4         = VK_NUMPAD4,
+        NP_5         = VK_NUMPAD5,
+        NP_6         = VK_NUMPAD6,
+        NP_7         = VK_NUMPAD7,
+        NP_8         = VK_NUMPAD8,
+        NP_9         = VK_NUMPAD9,
+        NP_MULTIPLY  = VK_MULTIPLY,
+        NP_ADD       = VK_ADD,
+        NP_SEPARATOR = VK_SEPARATOR,
+        NP_SUBTRACT  = VK_SUBTRACT,
+        NP_DECIMAL   = VK_DECIMAL,
+        NP_DIVIDE    = VK_DIVIDE,
+        
+        // ---- Function keys ----
+        F1           = VK_F1,
+        F2           = VK_F2,
+        F3           = VK_F3,
+        F4           = VK_F4,
+        F5           = VK_F5,
+        F6           = VK_F6,
+        F7           = VK_F7,
+        F8           = VK_F8,
+        F9           = VK_F9,
+        F10          = VK_F10,
+        F11          = VK_F11,
+        F12          = VK_F12,
+        
+        // ---- Shift/ctrl/etc keys ----
+        NUMLOCK      = VK_NUMLOCK,
+        SCRLLOCK     = VK_SCROLL,
+        LEFT_SHIFT   = VK_LSHIFT,
+        RIGHT_SHIFT  = VK_RSHIFT,
+        LEFT_CTRL    = VK_LCONTROL,
+        RIGHT_CTRL   = VK_RCONTROL
+    };
 #else
     #error Sorry, your platform is currently not supported!
 #endif

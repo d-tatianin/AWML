@@ -6,27 +6,27 @@ int main()
 {
     auto window = awml::Window::Create(
         L"My Window",
-        1920, 1080,
+        1280, 720,
         awml::Context::OpenGL,
         true,
-        true
+        false
     );
 
     window->OnKeyPressedFunc(
-        [&window](awml_keycode key_code, bool repeated, uint16_t repeat_count)
+        [&window](awml_key key_code, bool repeated, uint16_t repeat_count)
         {
-            if (key_code == AWML_KEY_H)
+            if (key_code == awml_key::H)
                 window->CaptureCursor(true);
-            else if (key_code == AWML_KEY_G)
+            else if (key_code == awml_key::G)
                 window->CaptureCursor(false);
 
-            if (key_code == AWML_F9)
+            if (key_code == awml_key::F9)
                 window->SetFullscreen(true);
-            else if (key_code == AWML_ESCAPE || key_code == AWML_F8)
+            else if (key_code == awml_key::ESCAPE || key_code == awml_key::F8)
                 window->SetFullscreen(false);
 
             std::cout << "Key "
-                << key_code
+                << static_cast<uint16_t>(key_code)
                 << " pressed. Repeated ("
                 << repeated
                 << ") " << "Repeat count ("
@@ -37,10 +37,10 @@ int main()
     );
 
     window->OnKeyReleasedFunc(
-        [](awml_keycode key_code)
+        [](awml_key key_code)
         {
             std::cout << "Key "
-                << key_code
+                << static_cast<uint16_t>(key_code)
                 << " released."
                 << std::endl;
         }
@@ -78,25 +78,25 @@ int main()
     );
 
     window->OnMousePressedFunc(
-        [&window](awml_keycode code)
+        [&window](awml_key code)
         {
-            if (code == AWML_MB_LEFT)
+            if (code == awml_key::MOUSE_LEFT)
                 window->HideCursor(true);
-            else if(code == AWML_MB_RIGHT)
+            else if(code == awml_key::MOUSE_RIGHT)
                 window->HideCursor(false);
 
             std::cout << "Mouse button "
-                << code
+                << static_cast<uint16_t>(code)
                 << " pressed."
                 << std::endl;
         }
     );
 
     window->OnMouseReleasedFunc(
-        [](awml_keycode code)
+        [](awml_key code)
         {
             std::cout << "Mouse button "
-                << code
+                << static_cast<uint16_t>(code)
                 << " released."
                 << std::endl;
         }
