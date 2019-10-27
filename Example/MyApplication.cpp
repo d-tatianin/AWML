@@ -6,15 +6,20 @@ int main()
 {
     auto window = awml::Window::Create(
         L"My Window",
-        1280, 720,
+        1920, 1080,
         awml::Context::OpenGL,
-        false,
+        true,
         true
     );
 
     window->OnKeyPressedFunc(
         [&window](awml_keycode key_code, bool repeated, uint16_t repeat_count)
         {
+            if (key_code == AWML_KEY_H)
+                window->CaptureCursor(true);
+            else if (key_code == AWML_KEY_G)
+                window->CaptureCursor(false);
+
             if (key_code == AWML_F9)
                 window->SetFullscreen(true);
             else if (key_code == AWML_ESCAPE || key_code == AWML_F8)
@@ -73,8 +78,13 @@ int main()
     );
 
     window->OnMousePressedFunc(
-        [](awml_keycode code)
+        [&window](awml_keycode code)
         {
+            if (code == AWML_MB_LEFT)
+                window->HideCursor(true);
+            else if(code == AWML_MB_RIGHT)
+                window->HideCursor(false);
+
             std::cout << "Mouse button "
                 << code
                 << " pressed."
@@ -134,4 +144,6 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         window->Update();
     }
+
+    return 0;
 }

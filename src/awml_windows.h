@@ -134,6 +134,12 @@ namespace awml {
             char_typed_callback cb
         ) override;
 
+        bool Minimized() override;
+
+        void CaptureCursor(bool mode) override;
+
+        void HideCursor(bool mode) override;
+
         bool KeyPressed(awml_keycode key_code) override;
 
         void SetFullscreen(bool mode) override;

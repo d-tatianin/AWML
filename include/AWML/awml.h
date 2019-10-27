@@ -162,6 +162,11 @@ namespace awml {
         virtual uint16_t MouseX() = 0;
         virtual uint16_t MouseY() = 0;
 
+        virtual bool Minimized() = 0;
+
+        virtual void CaptureCursor(bool mode) = 0;
+        virtual void HideCursor(bool mode) = 0;
+
         virtual bool KeyPressed(awml_keycode key_code) = 0;
 
         virtual void SetFullscreen(bool mode) = 0;

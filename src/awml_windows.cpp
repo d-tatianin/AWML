@@ -202,7 +202,7 @@ namespace awml {
             );
         }
         
-        if (!mode)
+        if (!mode && m_FullScreen)
         {
             m_FullScreen = false;
 
@@ -340,6 +340,57 @@ namespace awml {
     bool WindowsWindow::KeyPressed(awml_keycode key_code)
     {
         return AWML_KEY_PRESSED_BIT & GetKeyState(key_code);
+    }
+
+    bool WindowsWindow::Minimized()
+    {
+        return !m_RunningWidth && !m_RunningHeight;
+    }
+
+    void WindowsWindow::CaptureCursor(bool mode)
+    {
+        if (mode)
+        {
+            RECT rect;
+            GetClientRect(m_Window, &rect);
+
+            POINT ul;
+            ul.x = rect.left;
+            ul.y = rect.top;
+
+            POINT lr;
+            lr.x = rect.right;
+            lr.y = rect.bottom;
+
+            MapWindowPoints(m_Window, nullptr, &ul, 1);
+            MapWindowPoints(m_Window, nullptr, &lr, 1);
+
+            rect.left = ul.x;
+            rect.top = ul.y;
+
+            rect.right = lr.x;
+            rect.bottom = lr.y;
+
+            ClipCursor(&rect);
+        }
+        else
+            ClipCursor(NULL);
+    }
+
+    void WindowsWindow::HideCursor(bool mode)
+    {
+        static bool hidden = false;
+
+        if (!hidden && mode)
+        {
+            ShowCursor(false);
+            hidden = true;
+        }
+        else if (hidden && !mode)
+        {
+            ShowCursor(true);
+            hidden = false;
+        }
     }
 
     WindowsWindow::~WindowsWindow()
