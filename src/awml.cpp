@@ -9,8 +9,9 @@ namespace awml {
         uint16_t width,
         uint16_t height,
         Context context,
-        bool resizable,
-        bool fullscreen
+        WindowMode window_mode,
+        CursorMode cursor_mode,
+        bool resizable
     )
     {
       #ifdef _WIN32
@@ -19,8 +20,10 @@ namespace awml {
                 title,
                 width,
                 height,
-                resizable,
-                fullscreen
+                context,
+                window_mode,
+                cursor_mode,
+                resizable
             );
 
         switch (context)

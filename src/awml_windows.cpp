@@ -74,8 +74,10 @@ namespace awml {
         const std::wstring& title,
         uint16_t width,
         uint16_t height,
-        bool resizable,
-        bool fullscreen
+        Context context,
+        WindowMode window_mode,
+        CursorMode cursor_mode,
+        bool resizable
     ) : m_ClassName(title),
         m_WindowTitle(title),
         m_WinProps(),
@@ -91,7 +93,8 @@ namespace awml {
         m_NativeHeight(0),
         m_MouseX(0),
         m_MouseY(0),
-        m_FullScreen(fullscreen),
+        m_WindowMode(WindowMode::UNSPECIFIED),
+        m_CursorMode(cursor_mode),
         m_ShouldClose(false)
     {
         m_ClassName += std::to_wstring(s_WindowID++);
@@ -137,12 +140,12 @@ namespace awml {
 
         SetWindowLongPtrW(m_Window, 0, reinterpret_cast<LONG_PTR>(this));
 
-        if (m_FullScreen) SetFullscreen(true);
+        SetWindowMode(window_mode);
 
         ShowWindow(m_Window, SW_NORMAL);
     }
 
-    void WindowsWindow::SetFullscreen(bool mode)
+    void WindowsWindow::SetWindowMode(WindowMode window_mode)
     {
         static WINDOWPLACEMENT last_placement = { sizeof(last_placement) };
 
@@ -150,9 +153,11 @@ namespace awml {
 
         static bool resolution_changed = false;
 
-        if (mode && (style & m_WindowStyle))
+        if ((window_mode == WindowMode::FULLSCREEN) &&
+            (m_WindowMode != WindowMode::FULLSCREEN)
+        )
         {
-            m_FullScreen = true;
+            m_WindowMode = WindowMode::FULLSCREEN;
 
             MONITORINFO monitor_info = { sizeof(monitor_info) };
 
@@ -200,11 +205,15 @@ namespace awml {
                 monitor_info.rcMonitor.bottom - monitor_info.rcMonitor.top,
                 SWP_NOOWNERZORDER | SWP_FRAMECHANGED
             );
+
+            SetCursorMode(m_CursorMode);
         }
 
-        if (!mode && m_FullScreen)
+        if ((window_mode == WindowMode::WINDOWED) &&
+            (m_WindowMode == WindowMode::FULLSCREEN)
+        )
         {
-            m_FullScreen = false;
+            m_WindowMode = WindowMode::WINDOWED;
 
             if (resolution_changed)
             {
@@ -233,6 +242,8 @@ namespace awml {
                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
                 SWP_NOOWNERZORDER | SWP_FRAMECHANGED
             );
+
+            SetCursorMode(m_CursorMode);
         }
     }
 
@@ -348,9 +359,13 @@ namespace awml {
         return !m_RunningWidth && !m_RunningHeight;
     }
 
-    void WindowsWindow::CaptureCursor(bool mode)
+    void WindowsWindow::SetCursorMode(CursorMode cursor_mode)
     {
-        if (mode)
+        // TODO: change visible flag to m_CursorMode
+        // TODO: make the new mode |= m_CursorMode while
+        // XORing the old one.
+
+        if (CursorMode::CAPTURED & cursor_mode)
         {
             RECT rect;
             GetClientRect(m_Window, &rect);
@@ -374,20 +389,19 @@ namespace awml {
 
             ClipCursor(&rect);
         }
-        else
+        else if (CursorMode::FREE & cursor_mode)
+        {
             ClipCursor(NULL);
-    }
+        }
 
-    void WindowsWindow::HideCursor(bool mode)
-    {
         static bool hidden = false;
 
-        if (!hidden && mode)
+        if (!hidden && (CursorMode::HIDDEN & cursor_mode))
         {
             ShowCursor(false);
             hidden = true;
         }
-        else if (hidden && !mode)
+        else if (hidden && (CursorMode::VISIBLE & cursor_mode))
         {
             ShowCursor(true);
             hidden = false;
@@ -430,23 +444,30 @@ namespace awml {
         // but we only want to get one event.
         static bool resizing = false;
 
-        if (m_FullScreen && !resizing)
+        if (m_RunningWidth  &&
+            m_RunningHeight &&
+            width           &&
+            height
+        ) AWML_LIKELY
         {
-            resizing = true;
-            return;
-        }
+            if (m_WindowMode == WindowMode::FULLSCREEN && !resizing)
+            {
+                resizing = true;
+                return;
+            }
 
-        if (m_FullScreen &&
-          ((m_RunningWidth == width) &&
-           (m_RunningHeight == height)))
-        {
-            resizing = false;
-            return;
-        }
+            if (m_WindowMode == WindowMode::FULLSCREEN &&
+                ((m_RunningWidth == width) &&
+                (m_RunningHeight == height)))
+            {
+                resizing = false;
+                return;
+            }
 
-        if ((m_RunningWidth == width) &&
-            (m_RunningHeight == height))
-            return;
+            if ((m_RunningWidth == width) &&
+                (m_RunningHeight == height))
+                return;
+        }
 
         m_RunningWidth = width;
         m_RunningHeight = height;
@@ -459,7 +480,7 @@ namespace awml {
 
     void WindowsWindow::OnWindowClosed()
     {
-        if (m_FullScreen)
+        if (m_WindowMode == WindowMode::FULLSCREEN)
         {
             SetResolution(m_NativeWidth, m_NativeHeight);
         }
@@ -626,7 +647,7 @@ namespace awml {
             );
             break;
         case WM_KILLFOCUS:
-            if (owner->m_FullScreen)
+            if (owner->m_WindowMode == WindowMode::FULLSCREEN)
             {
                 owner->SetResolution(
                     owner->m_NativeWidth,
@@ -640,7 +661,7 @@ namespace awml {
             }
             break;
         case WM_SETFOCUS:
-            if (owner->m_FullScreen)
+            if (owner->m_WindowMode == WindowMode::FULLSCREEN)
             {
                 owner->SetResolution(
                     owner->m_OriginalWidth,
@@ -651,9 +672,14 @@ namespace awml {
                     owner->m_Window,
                     SW_RESTORE
                 );
+
+                owner->SetCursorMode(
+                    owner->m_CursorMode
+                );
             }
+            break;
         case WM_MOVE:
-            if(!(owner->m_FullScreen))
+            if(!(owner->m_WindowMode == WindowMode::FULLSCREEN))
                 owner->RecalculateNative();
             break;
         AWML_UNLIKELY case WM_DESTROY:

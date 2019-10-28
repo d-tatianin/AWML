@@ -8,22 +8,22 @@ int main()
         L"My Window",
         1280, 720,
         awml::Context::OpenGL,
-        true,
-        false
+        awml::WindowMode::FULLSCREEN,
+        awml::CursorMode::FREE | awml::CursorMode::VISIBLE
     );
 
     window->OnKeyPressedFunc(
         [&window](awml_key key_code, bool repeated, uint16_t repeat_count)
         {
             if (key_code == awml_key::H)
-                window->CaptureCursor(true);
+                window->SetCursorMode(awml::CursorMode::CAPTURED);
             else if (key_code == awml_key::G)
-                window->CaptureCursor(false);
+                window->SetCursorMode(awml::CursorMode::VISIBLE);
 
             if (key_code == awml_key::F9)
-                window->SetFullscreen(true);
+                window->SetWindowMode(awml::WindowMode::FULLSCREEN);
             else if (key_code == awml_key::ESCAPE || key_code == awml_key::F8)
-                window->SetFullscreen(false);
+                window->SetWindowMode(awml::WindowMode::WINDOWED);
 
             std::cout << "Key "
                 << static_cast<uint16_t>(key_code)
@@ -81,9 +81,9 @@ int main()
         [&window](awml_key code)
         {
             if (code == awml_key::MOUSE_LEFT)
-                window->HideCursor(true);
+                window->SetCursorMode(awml::CursorMode::HIDDEN);
             else if(code == awml_key::MOUSE_RIGHT)
-                window->HideCursor(false);
+                window->SetCursorMode(awml::CursorMode::VISIBLE);
 
             std::cout << "Mouse button "
                 << static_cast<uint16_t>(code)

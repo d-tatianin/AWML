@@ -61,7 +61,9 @@ namespace awml {
         uint16_t m_MouseX;
         uint16_t m_MouseY;
 
-        bool m_FullScreen;
+        WindowMode m_WindowMode;
+        CursorMode m_CursorMode;
+
         bool m_ShouldClose;
 
         key_pressed_callback    m_KeyPressedCB;
@@ -78,8 +80,10 @@ namespace awml {
             const std::wstring& title,
             uint16_t width,
             uint16_t height,
-            bool resizable,
-            bool fullscreen
+            Context context,
+            WindowMode window_mode,
+            CursorMode cursor_mode,
+            bool resizable
         );
 
         void SetContext(window_context wc) override;
@@ -136,13 +140,11 @@ namespace awml {
 
         bool Minimized() override;
 
-        void CaptureCursor(bool mode) override;
-
-        void HideCursor(bool mode) override;
-
         bool KeyPressed(awml_key key_code) override;
 
-        void SetFullscreen(bool mode) override;
+        void SetCursorMode(CursorMode cursor_mode) override;
+
+        void SetWindowMode(WindowMode window_mode) override;
 
         ~WindowsWindow();
     private:

@@ -11,6 +11,37 @@
 
 namespace awml {
 
+    enum class CursorMode : uint8_t
+    {
+        VISIBLE  = 1,
+        HIDDEN   = 2,
+
+        FREE     = 3, // Can be moved outside of the window
+        CAPTURED = 4  // Cannot be moved outside of the window
+    };
+
+    inline CursorMode operator|(CursorMode l, CursorMode r)
+    {
+        return static_cast<CursorMode>(
+            static_cast<uint8_t>(l) |
+            static_cast<uint8_t>(r)
+        );
+    }
+
+    inline uint8_t operator&(CursorMode l, CursorMode r)
+    {
+        return static_cast<uint8_t>(l) &
+               static_cast<uint8_t>(r);
+    }
+
+    enum class WindowMode
+    {
+        UNSPECIFIED = 0, // do not use
+
+        WINDOWED   = 1,
+        FULLSCREEN = 2
+    };
+
     enum class Context
     {
         NONE   = 0,
@@ -101,8 +132,9 @@ namespace awml {
             uint16_t width,
             uint16_t height,
             Context context,
-            bool resizable = true,
-            bool fullscreen = false
+            WindowMode window_mode = WindowMode::WINDOWED,
+            CursorMode cursor_mode = CursorMode::VISIBLE | CursorMode::FREE,
+            bool resizable = false
         );
 
         Window(const Window& other) = delete;
@@ -164,12 +196,11 @@ namespace awml {
 
         virtual bool Minimized() = 0;
 
-        virtual void CaptureCursor(bool mode) = 0;
-        virtual void HideCursor(bool mode) = 0;
-
         virtual bool KeyPressed(awml_key key_code) = 0;
 
-        virtual void SetFullscreen(bool mode) = 0;
+        virtual void SetCursorMode(CursorMode cursor_mode) = 0;
+
+        virtual void SetWindowMode(WindowMode window_mode) = 0;
 
         virtual ~Window() {}
     };
