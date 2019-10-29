@@ -495,6 +495,11 @@ namespace awml {
         // so we have to handle that case here.
         if (xpos != m_MouseX || ypos != m_MouseY)
         {
+            if (xpos > m_RunningWidth)
+                xpos = 0;
+            if (ypos > m_RunningHeight)
+                ypos = 0;
+            
             m_MouseX = xpos;
             m_MouseY = ypos;
 
