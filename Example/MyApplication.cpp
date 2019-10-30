@@ -9,7 +9,8 @@ int main()
         1280, 720,
         awml::Context::OpenGL,
         awml::WindowMode::WINDOWED,
-        awml::CursorMode::FREE | awml::CursorMode::VISIBLE
+        awml::CursorMode::FREE | awml::CursorMode::VISIBLE,
+        true
     );
 
     window->OnKeyPressedFunc(
@@ -47,8 +48,10 @@ int main()
     );
 
     window->OnWindowResizedFunc(
-        [](uint16_t width, uint16_t height)
+        [&window](uint16_t width, uint16_t height)
         {
+            glViewport(0, 0, window->Width(), window->Height());
+
             std::cout <<
                 "Resized the window, New size: "
                 << width
@@ -153,7 +156,27 @@ int main()
 
     while (!window->ShouldClose())
     {
+        static float moving_x = -1.0f;
+
+        if (moving_x - 1.0f > 1.0f)
+            moving_x = -1.0f;
+
+        moving_x += 0.01f;
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glColor3f(
+            -sin(moving_x - 1.0f),
+            -cos(moving_x * 0.44f),
+             sin(moving_x * 0.24f)
+        );
+
+        glBegin(GL_TRIANGLES);
+        glVertex3f(-1.0f  + moving_x, -0.25f, 0.0f);
+        glVertex3f(-0.5f  + moving_x, -0.25f, 0.0f);
+        glVertex3f(-0.75f + moving_x,  0.25f, 0.0f);
+        glEnd();
+
         window->Update();
     }
 
