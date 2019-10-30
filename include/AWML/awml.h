@@ -34,7 +34,7 @@ namespace awml {
                static_cast<uint8_t>(r);
     }
 
-    enum class WindowMode
+    enum class WindowMode : uint8_t
     {
         UNSPECIFIED = 0, // do not use
 
@@ -42,7 +42,7 @@ namespace awml {
         FULLSCREEN = 2
     };
 
-    enum class Context
+    enum class Context : uint8_t
     {
         NONE   = 0,
         OpenGL = 1
@@ -107,6 +107,34 @@ namespace awml {
     typedef std::function<void(wchar_t)>
         char_typed_callback;
 
+
+    enum class error : uint16_t
+    {
+        OK          = 0,
+        GENERIC     = 1,
+        NULL_WINDOW = 2,
+        BAD_ARGS    = 3
+    };
+
+    // A callback that gets called when an internal AWML error happens.
+    // Parameters:
+    // error -> One of the AWML error codes.
+    // string -> A detailed description of the error.
+    typedef std::function<void(error, const std::string&)>
+        error_callback;
+
+    inline const char* ErrorToString(error code)
+    {
+        switch (code)
+        {
+        case error::OK:          return "NO ERROR";
+        case error::GENERIC:     return "GENERIC ERROR";
+        case error::NULL_WINDOW: return "NULL WINDOW";
+        case error::BAD_ARGS:    return "BAD ARGS";
+        default:                 return "UNKNOWN ERROR";
+        }
+    }
+
     class Window;
 
     class GraphicsContext
@@ -146,6 +174,12 @@ namespace awml {
             window_context wc
         ) = 0;
     public:
+        virtual void Launch() = 0;
+
+        virtual void OnErrorFunc(
+            error_callback cb
+        ) = 0;
+
         virtual void OnKeyPressedFunc(
             key_pressed_callback cb
         ) = 0;

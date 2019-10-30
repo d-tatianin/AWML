@@ -44,6 +44,7 @@ namespace awml {
 
         uint32_t m_WindowStyle;
 
+        Context        m_ContextType;
         window_context m_Context;
 
         uint16_t m_OriginalWidth;
@@ -66,6 +67,7 @@ namespace awml {
 
         bool m_ShouldClose;
 
+        error_callback          m_ErrorCB;
         key_pressed_callback    m_KeyPressedCB;
         key_released_callback   m_KeyReleasedCB;
         window_resized_callback m_WindowResizedCB;
@@ -86,6 +88,8 @@ namespace awml {
             bool resizable
         );
 
+        void Launch() override;
+
         void SetContext(window_context wc) override;
 
         void Update() override;
@@ -101,6 +105,10 @@ namespace awml {
         uint16_t MouseX() override;
 
         uint16_t MouseY() override;
+
+        void OnErrorFunc(
+            error_callback cb
+        ) override;
 
         void OnKeyPressedFunc(
             key_pressed_callback cb
@@ -148,9 +156,12 @@ namespace awml {
 
         ~WindowsWindow();
     private:
+
         void SetResolution(uint16_t width, uint16_t height);
 
         void RecalculateNative();
+
+        void OnError(error code, const std::string& msg);
 
         void OnWindowResized(WORD width, WORD height);
 

@@ -15,7 +15,7 @@ namespace awml {
     )
     {
       #ifdef _WIN32
-        auto window =
+        return
             std::make_shared<WindowsWindow>(
                 title,
                 width,
@@ -25,20 +25,6 @@ namespace awml {
                 cursor_mode,
                 resizable
             );
-
-        switch (context)
-        {
-        case Context::NONE:
-            return window;
-        case Context::OpenGL:
-            window->SetContext(
-                std::make_unique<WindowsOpenGLContext>()
-            );
-            return window;
-        default:
-            return window;
-        }
-
       #endif
     }
 }

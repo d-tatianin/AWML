@@ -8,7 +8,7 @@ int main()
         L"My Window",
         1280, 720,
         awml::Context::OpenGL,
-        awml::WindowMode::FULLSCREEN,
+        awml::WindowMode::WINDOWED,
         awml::CursorMode::FREE | awml::CursorMode::VISIBLE
     );
 
@@ -138,6 +138,18 @@ int main()
                 << std::endl;
         }
     );
+
+    window->OnErrorFunc(
+        [](awml::error code, const std::string& msg)
+        {
+            std::cout << "AWML ERROR: "
+                << static_cast<uint16_t>(code)
+                << " " << msg
+                << std::endl;
+        }
+    );
+
+    window->Launch();
 
     while (!window->ShouldClose())
     {

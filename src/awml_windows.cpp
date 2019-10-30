@@ -93,12 +93,14 @@ namespace awml {
         m_NativeHeight(0),
         m_MouseX(0),
         m_MouseY(0),
-        m_WindowMode(WindowMode::UNSPECIFIED),
+        m_ContextType(context),
+        m_WindowMode(window_mode),
         m_CursorMode(cursor_mode),
         m_ShouldClose(false)
     {
         m_ClassName += std::to_wstring(s_WindowID++);
 
+        // this can return an error, add a handle later
         m_WinProps.lpfnWndProc = WindowEventHandler;
         m_WinProps.hInstance = s_ThisInstance;
         m_WinProps.lpszClassName = m_ClassName.c_str();
@@ -120,29 +122,60 @@ namespace awml {
         m_TrueHeight = static_cast<uint16_t>(rect.bottom - rect.top);
 
         RecalculateNative();
+    }
 
-        m_Window = CreateWindowExW(
-            0,
-            m_ClassName.c_str(),
-            m_WindowTitle.c_str(),
-            m_WindowStyle,
-            CW_USEDEFAULT, CW_USEDEFAULT,
-            m_TrueWidth,
-            m_TrueHeight,
-            NULL,
-            NULL,
-            s_ThisInstance,
-            NULL
-        );
+    void WindowsWindow::Launch()
+    {
+        static bool launched = false;
 
-        if (m_Window == NULL)
-            throw std::exception("Could not create a window!");
+        if (!launched)
+        {
+            launched = true;
 
-        SetWindowLongPtrW(m_Window, 0, reinterpret_cast<LONG_PTR>(this));
+            m_Window = CreateWindowExW(
+                0,
+                m_ClassName.c_str(),
+                m_WindowTitle.c_str(),
+                m_WindowStyle,
+                CW_USEDEFAULT, CW_USEDEFAULT,
+                m_TrueWidth,
+                m_TrueHeight,
+                NULL,
+                NULL,
+                s_ThisInstance,
+                NULL
+            );
 
-        SetWindowMode(window_mode);
+            if (m_Window == NULL)
+            {
+                OnError(error::NULL_WINDOW, "Could not create the window!");
+                return;
+            }
 
-        ShowWindow(m_Window, SW_NORMAL);
+            SetWindowLongPtrW(m_Window, 0, reinterpret_cast<LONG_PTR>(this));
+
+            // this is a bit messy, fix later
+            WindowMode wm = m_WindowMode;
+            m_WindowMode = WindowMode::UNSPECIFIED;
+            SetWindowMode(wm);
+
+            switch (m_ContextType)
+            {
+            case Context::OpenGL:
+                SetContext(
+                    std::make_unique<WindowsOpenGLContext>()
+                );
+                break;
+            default:
+                break;
+            }
+
+            ShowWindow(m_Window, SW_NORMAL);
+        }
+        else
+        {
+            OnError(error::GENERIC, "Launch has already been called earlier!");
+        }
     }
 
     void WindowsWindow::SetWindowMode(WindowMode window_mode)
@@ -258,6 +291,12 @@ namespace awml {
 
     void WindowsWindow::Update()
     {
+        if (!m_Window)
+        {
+            OnError(error::NULL_WINDOW, "Cannot update a NULL window!");
+            return;
+        }
+
         auto message = MSG();
         while (PeekMessageW(&message, NULL, 0, 0, PM_REMOVE))
         {
@@ -301,6 +340,11 @@ namespace awml {
     uint16_t WindowsWindow::MouseY()
     {
         return m_MouseY;
+    }
+
+    void WindowsWindow::OnErrorFunc(error_callback cb)
+    {
+        m_ErrorCB = cb;
     }
 
     void WindowsWindow::OnKeyPressedFunc(key_pressed_callback cb)
@@ -433,6 +477,12 @@ namespace awml {
             monitor_info.rcMonitor.bottom
             - monitor_info.rcMonitor.top
         );
+    }
+
+    void WindowsWindow::OnError(error code, const std::string& msg)
+    {
+        if (m_ErrorCB)
+            m_ErrorCB(code, msg);
     }
 
     void WindowsWindow::OnWindowResized(WORD width, WORD height)
