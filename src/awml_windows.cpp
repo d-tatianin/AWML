@@ -617,6 +617,29 @@ namespace awml {
         ChangeDisplaySettings(&dm, 0);
     }
 
+    void WindowsWindow::Resize(uint16_t width, uint16_t height)
+    {
+        if (!m_Window)
+        {
+            OnError(error::NULL_WINDOW, "Cannot resize a null window!");
+            return;
+        }
+
+        if (m_WindowMode == WindowMode::FULLSCREEN)
+        {
+            OnError(error::GENERIC, "Cannot resize a fullscreen window!");
+            return;
+        }
+
+        SetWindowPos(
+            m_Window,
+            NULL,
+            0, 0, width, height,
+            SWP_NOMOVE | SWP_NOZORDER |
+            SWP_NOOWNERZORDER | SWP_FRAMECHANGED
+        );
+    }
+
     LRESULT CALLBACK WindowsWindow::WindowEventHandler(
         HWND window,
         UINT message,

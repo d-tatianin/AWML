@@ -236,6 +236,8 @@ namespace awml {
 
         virtual void SetWindowMode(WindowMode window_mode) = 0;
 
+        virtual void Resize(uint16_t width, uint16_t height) = 0;
+
         virtual ~Window() {}
     };
 }

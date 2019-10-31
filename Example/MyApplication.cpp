@@ -20,11 +20,14 @@ int main()
                 window->SetCursorMode(awml::CursorMode::CAPTURED);
             else if (key_code == awml_key::G)
                 window->SetCursorMode(awml::CursorMode::VISIBLE);
-
-            if (key_code == awml_key::F9)
+            else if (key_code == awml_key::F9)
                 window->SetWindowMode(awml::WindowMode::FULLSCREEN);
             else if (key_code == awml_key::ESCAPE || key_code == awml_key::F8)
                 window->SetWindowMode(awml::WindowMode::WINDOWED);
+            else if (key_code == awml_key::Q)
+                window->Resize(window->Width() + 100, window->Height() + 100);
+            else if (key_code == awml_key::E)
+                window->Resize(window->Width() - 100, window->Height() - 100);
 
             std::cout << "Key "
                 << static_cast<uint16_t>(key_code)

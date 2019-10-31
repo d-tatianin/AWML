@@ -154,6 +154,8 @@ namespace awml {
 
         void SetWindowMode(WindowMode window_mode) override;
 
+        void Resize(uint16_t width, uint16_t height) override;
+
         ~WindowsWindow();
     private:
 
