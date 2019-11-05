@@ -126,6 +126,8 @@
         LEFT_CTRL    = VK_LCONTROL,
         RIGHT_CTRL   = VK_RCONTROL
     };
+#elif defined (__linux__)
+    typedef uint32_t awml_key;
 #else
     #error Sorry, your platform is currently not supported!
 #endif

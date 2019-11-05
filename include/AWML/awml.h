@@ -4,8 +4,9 @@
 
 #ifdef _WIN32
   #include <windows.h>
-  #include <GL/gl.h>
 #endif
+
+#include <GL/gl.h>
 
 #include "key_codes.h"
 
