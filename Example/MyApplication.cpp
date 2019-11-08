@@ -29,8 +29,8 @@ int main()
             else if (key_code == awml_key::E)
                 window->Resize(window->Width() - 100, window->Height() - 100);
 
-            std::cout << "Key "
-                << static_cast<uint16_t>(key_code)
+            std::cout
+                << key_code
                 << " pressed. Repeated ("
                 << repeated
                 << ") " << "Repeat count ("
@@ -43,8 +43,8 @@ int main()
     window->OnKeyReleasedFunc(
         [](awml_key key_code)
         {
-            std::cout << "Key "
-                << static_cast<uint16_t>(key_code)
+            std::cout
+                << key_code
                 << " released."
                 << std::endl;
         }
@@ -91,8 +91,8 @@ int main()
             else if(code == awml_key::MOUSE_RIGHT)
                 window->SetCursorMode(awml::CursorMode::VISIBLE);
 
-            std::cout << "Mouse button "
-                << static_cast<uint16_t>(code)
+            std::cout
+                << code
                 << " pressed."
                 << std::endl;
         }
@@ -101,8 +101,8 @@ int main()
     window->OnMouseReleasedFunc(
         [](awml_key code)
         {
-            std::cout << "Mouse button "
-                << static_cast<uint16_t>(code)
+            std::cout
+                << code
                 << " released."
                 << std::endl;
         }
