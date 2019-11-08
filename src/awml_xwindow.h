@@ -1,8 +1,11 @@
 #pragma once
 
+#include <unordered_map>
+
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xresource.h>
+
 
 #include "key_codes.h"
 
@@ -29,6 +32,9 @@ namespace awml {
         CursorMode m_CursorMode;
 
         bool m_ShouldClose;
+
+        std::unordered_map<awml_key, uint8_t>
+            m_RepeatCount;
 
         error_callback          m_ErrorCB;
         key_pressed_callback    m_KeyPressedCB;
@@ -120,5 +126,14 @@ namespace awml {
         void Resize(uint16_t width, uint16_t height) override;
 
         ~XWindow();
+    private:
+        awml_key NormalizeKeyPress();
+
+        wchar_t GetTypedChar();
+
+        uint8_t GetKeyRepeatCount(awml_key code);
+
+        void IncremetRepeatCount(awml_key code);
+        void ResetRepeatCount(awml_key code);
     };
 }

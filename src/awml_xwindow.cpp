@@ -1,5 +1,7 @@
 #include <string>
 
+#include <X11/XKBlib.h>
+
 #include "awml_xwindow.h"
 
 namespace awml {
@@ -24,9 +26,13 @@ namespace awml {
     void XWindow::Launch() 
     {
         m_Connection = XOpenDisplay(NULL);
+        XkbSetDetectableAutoRepeat(m_Connection, true, NULL);
 
         if (!m_Connection)
-            throw "xxx";
+        {
+            //OnError(error::NULL_WINDOW, "Could not establish connection with the X server!");
+            return;
+        }
 
         uint32_t screen_num = DefaultScreen(m_Connection);
         uint32_t background_color = BlackPixel(m_Connection, screen_num);
@@ -42,7 +48,16 @@ namespace awml {
             background_color
         );
 
-        XSelectInput(m_Connection, m_Window, KeyPressMask | ButtonPressMask | KeyReleaseMask | ButtonReleaseMask | StructureNotifyMask);
+        XSelectInput(
+            m_Connection,
+            m_Window,
+            KeyPressMask      |
+            ButtonPressMask   |
+            KeyReleaseMask    |
+            ButtonReleaseMask |
+            PointerMotionMask |
+            StructureNotifyMask
+        );
 
         XMapWindow(m_Connection, m_Window);
 
@@ -66,29 +81,82 @@ namespace awml {
             switch (m_Event.type)
             {
             case ConfigureNotify:
+
+                if (m_Event.xconfigure.width  == m_Width &&
+                    m_Event.xconfigure.height == m_Height)
+                    return;
+
                 m_Width = m_Event.xconfigure.width;
                 m_Height = m_Event.xconfigure.height;
+
                 if (m_WindowResizedCB)
                     m_WindowResizedCB(m_Width, m_Height);
+
                 break;
-            case ButtonPress:
+
+            case ButtonPress: 
                 if (m_MousePressedCB)
-                    m_MousePressedCB(static_cast<awml_key>(m_Event.xbutton.button));
+                    m_MousePressedCB(
+                        static_cast<awml_key>(m_Event.xbutton.button)
+                    );
+
                 break;
+
             case ButtonRelease:
                 if (m_MouseReleasedCB)
-                    m_MouseReleasedCB(static_cast<awml_key>(m_Event.xbutton.button));
+                    m_MouseReleasedCB(
+                        static_cast<awml_key>(m_Event.xbutton.button)
+                    );
+
                     break;
+
             case KeyPress:
+            {
+                wchar_t typed_char = GetTypedChar();
+
+                if (typed_char && m_CharTypedCB)
+                    m_CharTypedCB(
+                       typed_char
+                    );
+
+                auto key = NormalizeKeyPress();
+
                 if (m_KeyPressedCB)
-                    m_KeyPressedCB(static_cast<awml_key>(XKeycodeToKeysym(m_Connection, m_Event.xkey.keycode, 0)), true, 0);
-		break;
+                    m_KeyPressedCB(
+                        key,
+                        GetKeyRepeatCount(key),
+                        GetKeyRepeatCount(key)
+                    );
+
+                IncremetRepeatCount(key);
+
+                break;
+            }
             case KeyRelease:
+            {
+                auto key = NormalizeKeyPress();
+
                 if (m_KeyReleasedCB)
-                    m_KeyReleasedCB(static_cast<awml_key>(XKeycodeToKeysym(m_Connection, m_Event.xkey.keycode, 0)));
-		break;
+                    m_KeyReleasedCB(key);
+
+                ResetRepeatCount(key);
+
+                break;
+            }
+            case MotionNotify:
+                if (m_MouseMovedCB)
+                    m_MouseMovedCB(
+                        m_Event.xmotion.x,
+                        m_Event.xmotion.y
+                    );
+
+                    break;
+
             case ClientMessage:
                 m_ShouldClose = true;
+
+                break;
+
             default:
                 break;
             }
@@ -102,7 +170,6 @@ namespace awml {
 
     void XWindow::Close()
     {
-
     }
 
     uint16_t XWindow::Width()
@@ -164,7 +231,7 @@ namespace awml {
         mouse_moved_callback cb
     )
     {
-
+        m_MouseMovedCB = cb;
     }
 
     void XWindow::OnMousePressedFunc(
@@ -192,7 +259,7 @@ namespace awml {
         char_typed_callback cb
     )
     {
-
+        m_CharTypedCB = cb;
     }
 
     bool XWindow::Minimized()
@@ -200,7 +267,7 @@ namespace awml {
         return m_Width == 0 && m_Height == 0;
     }
 
-    bool XWindow:: KeyPressed(awml_key key_code)
+    bool XWindow::KeyPressed(awml_key key_code)
     {
 
     }
@@ -218,6 +285,62 @@ namespace awml {
     void XWindow::Resize(uint16_t width, uint16_t height)
     {
 
+    }
+
+    awml_key XWindow::NormalizeKeyPress()
+    {
+        auto key_sym = XkbKeycodeToKeysym(
+            m_Connection,
+            m_Event.xkey.keycode,
+            0,
+            m_Event.xkey.state & ShiftMask ? 1 : 0
+        );
+
+        KeySym lower_sym;
+        KeySym upper_sym;
+
+        XConvertCase(key_sym, &lower_sym, &upper_sym);
+
+        return static_cast<awml_key>(lower_sym);
+    }
+
+    wchar_t XWindow::GetTypedChar()
+    {
+        auto key_sym = XkbKeycodeToKeysym(
+            m_Connection,
+            m_Event.xkey.keycode,
+            0,
+            m_Event.xkey.state & ShiftMask ? 1 : 0
+        );
+
+        // This is not how you actually get the typed char
+        // To be fixed later.
+        //static_cast<wchar_t>(*XKeysymToString(key_sym))
+
+        return static_cast<wchar_t>(0);
+    }
+
+    uint8_t XWindow::GetKeyRepeatCount(awml_key code)
+    {
+        return m_RepeatCount.count(code) ?
+            m_RepeatCount[code] : 0;
+    }
+
+    void XWindow::IncremetRepeatCount(awml_key code)
+    {
+        if (m_RepeatCount.count(code))
+        {
+            if (m_RepeatCount[code] != UINT8_MAX)
+                m_RepeatCount[code]++;
+        }
+        else
+            m_RepeatCount[code] = 1;
+    }
+
+    void XWindow::ResetRepeatCount(awml_key code)
+    {
+        if (m_RepeatCount.count(code))
+            m_RepeatCount[code] = 0;
     }
 
     XWindow::~XWindow() 

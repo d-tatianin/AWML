@@ -1,4 +1,5 @@
 #include <iostream>
+#include <math.h>
 
 #include <AWML/awml.h>
 
@@ -35,7 +36,7 @@ int main()
                 << repeated
                 << ") " << "Repeat count ("
                 << repeat_count
-                << ")"
+                << ")" << static_cast<uint16_t>(key_code)
                 << std::endl;
         }
     );
