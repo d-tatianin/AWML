@@ -3,7 +3,6 @@
 #include <cstdint>
 
 #ifdef _WIN32
-
     #include <winuser.h>
 
     enum class awml_key : uint16_t
@@ -19,9 +18,6 @@
         BACKSPACE    = VK_BACK,
         TAB          = VK_TAB,
         ENTER        = VK_RETURN,
-        SHIFT        = VK_SHIFT,
-        CONTROL      = VK_CONTROL,
-        ALT          = VK_MENU,
         PAUSE        = VK_PAUSE,
         CAPSLOCK     = VK_CAPITAL,
         ESCAPE       = VK_ESCAPE,
@@ -40,7 +36,7 @@
         // ---- Misc keyboard ----
         PRINTSCREEN  = VK_SNAPSHOT,
         INSERT       = VK_INSERT,
-        DEL          = VK_DELETE,
+        DELETE       = VK_DELETE,
 
         // ---- Keyboard numbers ----
         _0        = 0x30,
@@ -124,10 +120,133 @@
         LEFT_SHIFT   = VK_LSHIFT,
         RIGHT_SHIFT  = VK_RSHIFT,
         LEFT_CTRL    = VK_LCONTROL,
-        RIGHT_CTRL   = VK_RCONTROL
+        RIGHT_CTRL   = VK_RCONTROL,
+        LEFT_ALT     = VK_LMENU,
+        RIGHT_ALT    = VK_RMENU,
     };
 #elif defined (__linux__)
-    typedef uint32_t awml_key;
+    #include <X11/keysym.h>
+
+    enum class awml_key : uint16_t
+    {
+        // ---- Mouse buttons ----
+        MOUSE_LEFT   = 0x01,
+        MOUSE_RIGHT  = 0x03,
+        MOUSE_MIDDLE = 0x02,
+        MOUSE_X1     = 0x04,
+        MOUSE_X2     = 0x05,
+        
+        // ---- Misc keyboard keys ----
+        BACKSPACE    = XK_BackSpace,
+        TAB          = XK_Tab,
+        ENTER        = XK_Return,
+        PAUSE        = XK_Pause,
+        ESCAPE       = XK_Escape,
+        DELETE       = XK_Delete,
+        HOME         = XK_Home,
+
+        // ---- Arrow keys ----
+        LEFT         = XK_Left,
+        UP           = XK_Up,
+        RIGHT        = XK_Right,
+        DOWN         = XK_Down,
+
+        // ---- Misc keyboard ----
+        PAGEUP       = XK_Page_Up,
+        PAGEDOWN     = XK_Page_Down,
+        END          = XK_End, 
+        PRINTSCREEN  = XK_Print,
+        INSERT       = XK_Insert,
+        SPACEBAR     = XK_space,
+
+        // ---- Keyboard numbers ----
+        _0        = XK_0,
+        _1        = XK_1,
+        _2        = XK_2,
+        _3        = XK_3,
+        _4        = XK_4,
+        _5        = XK_5,
+        _6        = XK_6,
+        _7        = XK_7,
+        _8        = XK_8,
+        _9        = XK_9,
+        
+        // ---- Keyboard letters ----
+        A        = XK_A,
+        B        = XK_B,
+        C        = XK_C,
+        D        = XK_D,
+        E        = XK_E,
+        F        = XK_F,
+        G        = XK_G,
+        H        = XK_H,
+        I        = XK_I,
+        J        = XK_J,
+        K        = XK_K,
+        L        = XK_L,
+        M        = XK_M,
+        N        = XK_N,
+        O        = XK_O,
+        P        = XK_P,
+        Q        = XK_Q,
+        R        = XK_R,
+        S        = XK_S,
+        T        = XK_T,
+        U        = XK_U,
+        V        = XK_V,
+        W        = XK_W,
+        X        = XK_X,
+        Y        = XK_Y,
+        Z        = XK_Z,
+
+        // ---- SUPER (system-specific) ----
+        SUPER_LEFT  = XK_Super_L,
+        SUPER_RIGHT = XK_Super_R,
+        
+        // ---- Numpad keys ----
+        NP_0         = XK_KP_0,
+        NP_1         = XK_KP_1,
+        NP_2         = XK_KP_2,
+        NP_3         = XK_KP_3,
+        NP_4         = XK_KP_4,
+        NP_5         = XK_KP_5,
+        NP_6         = XK_KP_6,
+        NP_7         = XK_KP_7,
+        NP_8         = XK_KP_8,
+        NP_9         = XK_KP_9,
+        NP_MULTIPLY  = XK_KP_Multiply,
+        NP_ADD       = XK_KP_Add,
+        NP_SEPARATOR = XK_KP_Separator,
+        NP_SUBTRACT  = XK_KP_Subtract,
+        NP_DECIMAL   = XK_KP_Decimal,
+        NP_DIVIDE    = XK_KP_Divide,
+        
+        // ---- Function keys ----
+        F1           = XK_F1,
+        F2           = XK_F2,
+        F3           = XK_F3,
+        F4           = XK_F4,
+        F5           = XK_F5,
+        F6           = XK_F6,
+        F7           = XK_F7,
+        F8           = XK_F8,
+        F9           = XK_F9,
+        F10          = XK_F10,
+        F11          = XK_F11,
+        F12          = XK_F12,
+        
+        // ---- Shift/ctrl/etc keys ----
+        NUMLOCK      = XK_Num_Lock,
+        SCRLLOCK     = XK_Scroll_Lock,
+        LEFT_SHIFT   = XK_Shift_L,
+        RIGHT_SHIFT  = XK_Shift_R,
+        LEFT_CTRL    = XK_Control_L,
+        RIGHT_CTRL   = XK_Control_R,
+        CAPSLOCK     = XK_Caps_Lock,
+        LEFT_ALT     = XK_Alt_L,
+        RIGHT_ALT    = XK_Alt_R
+    };
+
 #else
     #error Sorry, your platform is currently not supported!
 #endif

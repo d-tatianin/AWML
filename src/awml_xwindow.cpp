@@ -42,7 +42,7 @@ namespace awml {
             background_color
         );
 
-        XSelectInput(m_Connection, m_Window, KeyPressMask | ButtonPressMask | StructureNotifyMask);
+        XSelectInput(m_Connection, m_Window, KeyPressMask | ButtonPressMask | KeyReleaseMask | ButtonReleaseMask | StructureNotifyMask);
 
         XMapWindow(m_Connection, m_Window);
 
@@ -73,11 +73,19 @@ namespace awml {
                 break;
             case ButtonPress:
                 if (m_MousePressedCB)
-                    m_MousePressedCB(m_Event.xbutton.button);
+                    m_MousePressedCB(static_cast<awml_key>(m_Event.xbutton.button));
                 break;
+            case ButtonRelease:
+                if (m_MouseReleasedCB)
+                    m_MouseReleasedCB(static_cast<awml_key>(m_Event.xbutton.button));
+                    break;
             case KeyPress:
                 if (m_KeyPressedCB)
-                    m_KeyPressedCB(static_cast<awml_key>(m_Event.xkey.keycode), true, 0);
+                    m_KeyPressedCB(static_cast<awml_key>(XKeycodeToKeysym(m_Connection, m_Event.xkey.keycode, 0)), true, 0);
+		break;
+            case KeyRelease:
+                if (m_KeyReleasedCB)
+                    m_KeyReleasedCB(static_cast<awml_key>(XKeycodeToKeysym(m_Connection, m_Event.xkey.keycode, 0)));
 		break;
             case ClientMessage:
                 m_ShouldClose = true;
@@ -135,7 +143,7 @@ namespace awml {
         key_released_callback cb
     )
     {
-
+        m_KeyReleasedCB = cb;
     }
 
     void XWindow::OnWindowResizedFunc(
@@ -170,7 +178,7 @@ namespace awml {
         mouse_released_callback cb
     )
     {
-
+       m_MouseReleasedCB = cb;
     }
 
     void XWindow::OnMouseScrolledFunc(
