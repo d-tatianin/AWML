@@ -6,6 +6,86 @@
 
 namespace awml {
 
+    XOpenGLContext::XOpenGLContext()
+        : m_Parent(nullptr),
+        m_VisualInfo(),
+        m_ColorMap(),
+        m_Attribs(),
+        m_OpenGLContext(),
+        m_WinAttribs(),
+        m_Props()
+    {
+    }
+
+    bool XOpenGLContext::Setup(Window* self)
+    {
+        m_Parent = static_cast<XWindow*>(self);
+
+        m_Props[0] = GLX_RGBA;
+        m_Props[1] = GLX_DEPTH_SIZE;
+        m_Props[2] = 24;
+        m_Props[3] = GLX_DOUBLEBUFFER;
+        m_Props[4] = None;
+
+        m_VisualInfo = glXChooseVisual(
+            m_Parent->m_Connection,
+            0,
+            m_Props
+        );
+
+        m_ColorMap = XCreateColormap(
+            m_Parent->m_Connection,
+            DefaultRootWindow(m_Parent->m_Connection),
+            m_VisualInfo->visual,
+            AllocNone
+        );
+
+        m_OpenGLContext =
+            glXCreateContext(
+                m_Parent->m_Connection,
+                m_VisualInfo,
+                NULL,
+                GL_TRUE
+            );
+
+        return true;
+    }
+
+    bool XOpenGLContext::Activate()
+    {
+        glXMakeCurrent(
+            m_Parent->m_Connection,
+            m_Parent->m_Window,
+            m_OpenGLContext
+        );
+
+        return true;
+    }
+
+    void XOpenGLContext::SwapBuffers()
+    {
+        glXSwapBuffers(
+            m_Parent->m_Connection,
+            m_Parent->m_Window
+        );
+    }
+
+    XOpenGLContext::~XOpenGLContext()
+    {
+        glXMakeCurrent(
+            m_Parent->m_Connection,
+            None,
+            NULL
+        );
+
+        glXDestroyContext(
+            m_Parent->m_Connection,
+            m_OpenGLContext
+        );
+
+        m_Parent->Close();
+    }
+
     XWindow::XWindow(
         const std::wstring& title,
         uint16_t width,
@@ -16,14 +96,15 @@ namespace awml {
         bool resizable
     ) : m_Width(width),
         m_Height(height),
-        m_Context(context),
+        m_Context(nullptr),
+        m_ContextType(context),
         m_WindowMode(window_mode),
         m_CursorMode(cursor_mode),
         m_ShouldClose(false)
     {
     }
 
-    void XWindow::Launch() 
+    void XWindow::Launch()
     {
         m_Connection = XOpenDisplay(NULL);
         XkbSetDetectableAutoRepeat(m_Connection, true, NULL);
@@ -63,11 +144,26 @@ namespace awml {
 
         Atom WM_DELETE_WINDOW = XInternAtom(m_Connection, "WM_DELETE_WINDOW", False);
         XSetWMProtocols(m_Connection, m_Window, &WM_DELETE_WINDOW, 1);
+
+        switch (m_ContextType)
+        {
+            case Context::OpenGL:
+                SetContext(
+                    std::make_unique<XOpenGLContext>()
+                );
+                break;
+            default:
+                break;
+        }
     }
 
     void XWindow::SetContext(window_context wc) 
     {
+        m_Context.reset(wc.release());
 
+        m_Context->Setup(this);
+
+        m_Context->Activate();
     }
 
     void XWindow::Update() 
@@ -95,38 +191,44 @@ namespace awml {
                 break;
 
             case ButtonPress:
-	    {
+            {
                 auto button = m_Event.xbutton.button;
-	         
-	        if (button == 4 || button == 5)
-		{
+
+                if (button == 4 || button == 5)
+                {
                     if (m_MouseScrolledCB)
-			m_MouseScrolledCB(button == 4 ? 10 : -10, true);
-		    break;
-		}
-		else if (button == 6 || button == 7)
-		{
+                        m_MouseScrolledCB(
+                            button == 4 ? 10 : -10, true
+                        );
+                    break;
+                }
+                else if (button == 6 || button == 7)
+                {
                     if (m_MouseScrolledCB)
-			m_MouseScrolledCB(button == 6 ? 10 : -10, false);
-		    break;
-		}
-		else if (m_MousePressedCB)
-                    m_MousePressedCB(
-                        static_cast<awml_key>(m_Event.xbutton.button)
-                    );
+                        m_MouseScrolledCB(button == 6 ? 10 : -10, false);
+                    break;
+                }
+                else if (m_MousePressedCB)
+                         m_MousePressedCB(
+                            static_cast<awml_key>(button)
+                        );
 
                 break;
             }
             case ButtonRelease:
             {
                 auto button = m_Event.xbutton.button;
-	         
-	        if (button == 4 || button == 5 || button == 6 || button == 7)
+                
+                if (button == 4 ||
+                    button == 5 ||
+                    button == 6 ||
+                    button == 7
+                )
                     break;
 
                 if (m_MouseReleasedCB)
                     m_MouseReleasedCB(
-                        static_cast<awml_key>(m_Event.xbutton.button)
+                        static_cast<awml_key>(button)
                     );
 
                     break;
@@ -182,6 +284,9 @@ namespace awml {
                 break;
             }
         }
+
+	if(m_Context)
+	   m_Context->SwapBuffers();
     }
 
     bool XWindow::ShouldClose()
@@ -191,6 +296,16 @@ namespace awml {
 
     void XWindow::Close()
     {
+        static bool closed = false;
+
+        // TODO: Change internal state
+        // to prevent using the window
+        // after manually calling close.
+        if (!closed)
+        {
+            XCloseDisplay(m_Connection);
+            closed = true;
+        }
     }
 
     uint16_t XWindow::Width()
@@ -217,7 +332,7 @@ namespace awml {
         error_callback cb
     )
     {
-
+        m_ErrorCB = cb;
     }
 
     void XWindow::OnKeyPressedFunc(
@@ -245,7 +360,7 @@ namespace awml {
         window_closed_callback cb
     )
     {
-
+        m_WindowClosedCB = cb;
     }
 
     void XWindow::OnMouseMovedFunc(
@@ -290,7 +405,16 @@ namespace awml {
 
     bool XWindow::KeyPressed(awml_key key_code)
     {
+        char key_map[32];
 
+        auto xcode = XKeysymToKeycode(
+            m_Connection,
+            static_cast<KeySym>(key_code)
+        );
+
+        XQueryKeymap(m_Connection, key_map);
+
+        return key_map[xcode/8] & (0x1<<(xcode%8));
     }
 
     void XWindow::SetCursorMode(CursorMode cursor_mode)
@@ -364,8 +488,9 @@ namespace awml {
             m_RepeatCount[code] = 0;
     }
 
-    XWindow::~XWindow() 
+    XWindow::~XWindow()
     {
-        XCloseDisplay(m_Connection);
+        if (!m_Context)
+            Close();
     }
 }

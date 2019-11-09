@@ -5,7 +5,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xresource.h>
-
+#include <GL/glx.h>
 
 #include "key_codes.h"
 
@@ -13,8 +13,32 @@
 
 namespace awml {
 
+    class XWindow;
+
+    class XOpenGLContext : public GraphicsContext
+    {
+    private:
+        XWindow*             m_Parent;
+        XVisualInfo*         m_VisualInfo;
+        Colormap             m_ColorMap;
+        XSetWindowAttributes m_Attribs;
+        GLXContext           m_OpenGLContext;
+        XWindowAttributes    m_WinAttribs;
+        GLint                m_Props[5];
+    public:
+        XOpenGLContext();
+
+        bool Setup(Window* self) override;
+        bool Activate() override;
+        void SwapBuffers() override;
+
+        ~XOpenGLContext();
+    };
+
     class XWindow : public Window
     {
+    private:
+        friend class XOpenGLContext;
     private:
         Display* m_Connection;
         ::Window m_Window;
@@ -26,7 +50,8 @@ namespace awml {
         uint16_t m_MouseX;
         uint16_t m_MouseY;
 
-        Context m_Context;
+        Context m_ContextType;
+        window_context m_Context;
 
         WindowMode m_WindowMode;
         CursorMode m_CursorMode;
