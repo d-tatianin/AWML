@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <iostream>
+#include <string>
 
 #ifdef _WIN32
     #include <winuser.h>
@@ -132,8 +133,8 @@
         MOUSE_LEFT   = 0x01,
         MOUSE_RIGHT  = 0x03,
         MOUSE_MIDDLE = 0x02,
-        MOUSE_X1     = 0x06,
-        MOUSE_X2     = 0x07,
+        MOUSE_X1     = 0x08,
+        MOUSE_X2     = 0x09,
 
         // ---- Arrow keys ----
         LEFT         = XK_Left,
@@ -250,7 +251,7 @@
 
 namespace awml {
 
-    static inline const char* KeyToString(awml_key code)
+    static inline std::string KeyToString(awml_key code)
     {
         switch (code)
         {
@@ -360,7 +361,15 @@ namespace awml {
             case awml_key::SUPER_LEFT:   return "Left Super";
             case awml_key::SUPER_RIGHT:  return "Right Super";
 
-            default:                     return "Unknown Key";
+            default: {
+                std::string custom_code =
+                std::to_string(
+                    static_cast<uint16_t>(code)
+                );
+                custom_code += " Key";
+
+                return custom_code;
+            }
         }
     }
 }

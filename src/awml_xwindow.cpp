@@ -94,22 +94,43 @@ namespace awml {
 
                 break;
 
-            case ButtonPress: 
-                if (m_MousePressedCB)
+            case ButtonPress:
+	    {
+                auto button = m_Event.xbutton.button;
+	         
+	        if (button == 4 || button == 5)
+		{
+                    if (m_MouseScrolledCB)
+			m_MouseScrolledCB(button == 4 ? 10 : -10, true);
+		    break;
+		}
+		else if (button == 6 || button == 7)
+		{
+                    if (m_MouseScrolledCB)
+			m_MouseScrolledCB(button == 6 ? 10 : -10, false);
+		    break;
+		}
+		else if (m_MousePressedCB)
                     m_MousePressedCB(
                         static_cast<awml_key>(m_Event.xbutton.button)
                     );
 
                 break;
-
+            }
             case ButtonRelease:
+            {
+                auto button = m_Event.xbutton.button;
+	         
+	        if (button == 4 || button == 5 || button == 6 || button == 7)
+                    break;
+
                 if (m_MouseReleasedCB)
                     m_MouseReleasedCB(
                         static_cast<awml_key>(m_Event.xbutton.button)
                     );
 
                     break;
-
+            }
             case KeyPress:
             {
                 wchar_t typed_char = GetTypedChar();
@@ -252,7 +273,7 @@ namespace awml {
         mouse_scrolled_callback cb
     )
     {
-
+       m_MouseScrolledCB = cb;
     }
 
     void XWindow::OnCharTypedFunc(
