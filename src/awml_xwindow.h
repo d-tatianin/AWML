@@ -150,6 +150,8 @@ namespace awml {
 
         void Resize(uint16_t width, uint16_t height) override;
 
+        void* GetNativeHandle() override;
+
         ~XWindow();
     private:
         awml_key NormalizeKeyPress();

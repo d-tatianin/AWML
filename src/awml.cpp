@@ -1,7 +1,12 @@
 #ifdef _WIN32
     #include "awml_windows.h"
+    #define AWML_NATIVE_WINDOW WindowsWindow
 #elif defined(__linux__)
     #include "awml_xwindow.h"
+    #define AWML_NATIVE_WINDOW XWindow
+#else
+    #error Sorry, your platform is currently not supported!
+    #define AWML_NATIVE_WINDOW
 #endif
 
 namespace awml {
@@ -16,9 +21,8 @@ namespace awml {
         bool resizable
     )
     {
-      #ifdef _WIN32
         return
-            std::make_shared<WindowsWindow>(
+            std::make_shared<AWML_NATIVE_WINDOW>(
                 title,
                 width,
                 height,
@@ -27,19 +31,5 @@ namespace awml {
                 cursor_mode,
                 resizable
             );
-      #elif defined(__linux__)
-        return
-	    std::make_shared<XWindow>(
-		title,
-                width,
-                height,
-                context,
-                window_mode,
-                cursor_mode,
-                resizable
-	   );
-      #else
-        #error Sorry, your platform is currently not supported!	
-      #endif
     }
 }

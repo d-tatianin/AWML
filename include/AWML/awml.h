@@ -239,6 +239,10 @@ namespace awml {
 
         virtual void Resize(uint16_t width, uint16_t height) = 0;
 
+        // HWND for Windows
+        // Display for Linux
+        virtual void* GetNativeHandle() = 0;
+
         virtual ~Window() {}
     };
 }

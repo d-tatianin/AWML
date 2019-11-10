@@ -432,6 +432,11 @@ namespace awml {
 
     }
 
+    void* XWindow::GetNativeHandle()
+    {
+        return m_Connection;
+    }
+
     awml_key XWindow::NormalizeKeyPress()
     {
         auto key_sym = XkbKeycodeToKeysym(

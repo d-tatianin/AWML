@@ -640,6 +640,11 @@ namespace awml {
         );
     }
 
+    void* WindowsWindow::GetNativeHandle()
+    {
+        return m_Window;
+    }
+
     LRESULT CALLBACK WindowsWindow::WindowEventHandler(
         HWND window,
         UINT message,
