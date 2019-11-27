@@ -289,6 +289,12 @@ namespace awml {
         m_Context->Activate();
     }
 
+    void WindowsWindow::SetTitle(const std::wstring& title)
+    {
+        m_WindowTitle = title;
+        SetWindowTextW(m_Window, m_WindowTitle.data());
+    }
+
     void WindowsWindow::Update()
     {
         if (!m_Window)

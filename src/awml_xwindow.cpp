@@ -331,6 +331,12 @@ namespace awml {
             m_Context->SwapBuffers();
     }
 
+    void XWindow::SetTitle(const std::wstring& title)
+    {
+        m_Title = title;
+        SetWindowTitle();
+    }
+
     bool XWindow::ShouldClose()
     {
         return m_ShouldClose;

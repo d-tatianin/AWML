@@ -90,6 +90,8 @@ namespace awml {
 
         void Update() override;
 
+        void SetTitle(const std::wstring& title) override;
+
         bool ShouldClose() override;
 
         void Close() override;

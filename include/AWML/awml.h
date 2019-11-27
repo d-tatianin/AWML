@@ -217,6 +217,8 @@ namespace awml {
             char_typed_callback cb
         ) = 0;
 
+        virtual void SetTitle(const std::wstring& title) = 0;
+
         virtual void Update() = 0;
 
         virtual bool ShouldClose() = 0;

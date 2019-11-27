@@ -92,6 +92,8 @@ namespace awml {
 
         void SetContext(window_context wc) override;
 
+        void SetTitle(const std::wstring& title) override;
+
         void Update() override;
 
         bool ShouldClose() override;
