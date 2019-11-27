@@ -1,4 +1,6 @@
 #include <string>
+#include <clocale>
+#include <cstring>
 
 #include <X11/XKBlib.h>
 
@@ -94,7 +96,8 @@ namespace awml {
         WindowMode window_mode,
         CursorMode cursor_mode,
         bool resizable
-    ) : m_Width(width),
+    ) : m_Title(title),
+        m_Width(width),
         m_Height(height),
         m_Context(nullptr),
         m_ContextType(context),
@@ -102,6 +105,7 @@ namespace awml {
         m_CursorMode(cursor_mode),
         m_ShouldClose(false)
     {
+        setlocale(LC_ALL, "en_US.utf8");
     }
 
     void XWindow::Launch()
@@ -111,7 +115,12 @@ namespace awml {
 
         if (!m_Connection)
         {
-            //OnError(error::NULL_WINDOW, "Could not establish connection with the X server!");
+            if (m_ErrorCB)
+                m_ErrorCB(
+                    error::NULL_WINDOW,
+                    "Could not establish connection with the X server!"
+                );
+
             return;
         }
 
@@ -128,6 +137,8 @@ namespace awml {
             2, border_color,
             background_color
         );
+
+        SetWindowTitle();
 
         XSelectInput(
             m_Connection,
@@ -155,6 +166,37 @@ namespace awml {
             default:
                 break;
         }
+    }
+
+    void XWindow::SetWindowTitle()
+    {
+        size_t title_size = m_Title.size() * 2;
+        char* title = static_cast<char*>(alloca(title_size));
+        auto final_size = wcstombs(title, m_Title.data(), title_size);
+        if (final_size == SIZE_MAX)
+        {
+            if (m_ErrorCB)
+                m_ErrorCB(
+                    error::GENERIC,
+                    "Failed to convert the window title to UTF-8, title will not be set."
+                );
+            return;
+        }
+        title[final_size] = '\0';
+
+        XStoreName(m_Connection, m_Window, title);
+
+        Atom _net_wm_name = XInternAtom(m_Connection, "_NET_WM_NAME", false);
+        Atom utf8_string = XInternAtom(m_Connection, "UTF8_STRING", false);
+        XChangeProperty(
+            m_Connection,
+            m_Window,
+            _net_wm_name,
+            utf8_string,
+            8, PropModeReplace,
+            reinterpret_cast<unsigned char*>(title),
+            title_size
+        );
     }
 
     void XWindow::SetContext(window_context wc) 
@@ -285,8 +327,8 @@ namespace awml {
             }
         }
 
-	if(m_Context)
-	   m_Context->SwapBuffers();
+        if (m_Context)
+            m_Context->SwapBuffers();
     }
 
     bool XWindow::ShouldClose()

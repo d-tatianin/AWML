@@ -44,6 +44,8 @@ namespace awml {
         ::Window m_Window;
         XEvent m_Event;
 
+        std::wstring m_Title;
+
         uint16_t m_Width;
         uint16_t m_Height;
 
@@ -154,6 +156,8 @@ namespace awml {
 
         ~XWindow();
     private:
+        void SetWindowTitle();
+
         awml_key NormalizeKeyPress();
 
         wchar_t GetTypedChar();
