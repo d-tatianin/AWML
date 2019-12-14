@@ -4,7 +4,7 @@
 
 #include <X11/XKBlib.h>
 
-#include "awml_xwindow.h"
+#include "XWindow.h"
 
 namespace awml {
 
@@ -208,7 +208,7 @@ namespace awml {
         m_Context->Activate();
     }
 
-    void XWindow::Update() 
+    void XWindow::PollEvents()
     {
         XPending(m_Connection);
 
@@ -220,7 +220,7 @@ namespace awml {
             {
             case ConfigureNotify:
 
-                if (m_Event.xconfigure.width  == m_Width &&
+                if (m_Event.xconfigure.width == m_Width &&
                     m_Event.xconfigure.height == m_Height)
                     return;
 
@@ -251,21 +251,21 @@ namespace awml {
                     break;
                 }
                 else if (m_MousePressedCB)
-                         m_MousePressedCB(
-                            static_cast<awml_key>(button)
-                        );
+                    m_MousePressedCB(
+                        static_cast<awml_key>(button)
+                    );
 
                 break;
             }
             case ButtonRelease:
             {
                 auto button = m_Event.xbutton.button;
-                
+
                 if (button == 4 ||
                     button == 5 ||
                     button == 6 ||
                     button == 7
-                )
+                    )
                     break;
 
                 if (m_MouseReleasedCB)
@@ -273,7 +273,7 @@ namespace awml {
                         static_cast<awml_key>(button)
                     );
 
-                    break;
+                break;
             }
             case KeyPress:
             {
@@ -281,7 +281,7 @@ namespace awml {
 
                 if (typed_char && m_CharTypedCB)
                     m_CharTypedCB(
-                       typed_char
+                        typed_char
                     );
 
                 auto key = NormalizeKeyPress();
@@ -315,7 +315,7 @@ namespace awml {
                         m_Event.xmotion.y
                     );
 
-                    break;
+                break;
 
             case ClientMessage:
                 m_ShouldClose = true;
@@ -326,9 +326,18 @@ namespace awml {
                 break;
             }
         }
+    }
 
+    void XWindow::SwapBuffers()
+    {
         if (m_Context)
             m_Context->SwapBuffers();
+    }
+
+    void XWindow::Update() 
+    {
+        PollEvents();
+        SwapBuffers();
     }
 
     void XWindow::SetTitle(const std::wstring& title)
@@ -356,90 +365,95 @@ namespace awml {
         }
     }
 
-    uint16_t XWindow::Width()
+    uint16_t XWindow::GetWidth()
     {
         return m_Width;
     }
 
-    uint16_t XWindow::Height()
+    uint16_t XWindow::GetHeight()
     {
         return m_Height;
     }
 
-    uint16_t XWindow::MouseX()
+    uint16_t XWindow::GetMouseX()
     {
         return m_MouseX;
     }
 
-    uint16_t XWindow::MouseY()
+    uint16_t XWindow::GetMouseY()
     {
         return m_MouseY;
     }
 
-    void XWindow::OnErrorFunc(
+    std::pair<uint16_t, uint16_t> XWindow::GetMouseCoords()
+    {
+        return { m_MouseX, m_MouseY };
+    }
+
+    void XWindow::OnError(
         error_callback cb
     )
     {
         m_ErrorCB = cb;
     }
 
-    void XWindow::OnKeyPressedFunc(
+    void XWindow::OnKeyPressed(
         key_pressed_callback cb
     )
     {
         m_KeyPressedCB = cb;
     }
 
-    void XWindow::OnKeyReleasedFunc(
+    void XWindow::OnKeyReleased(
         key_released_callback cb
     )
     {
         m_KeyReleasedCB = cb;
     }
 
-    void XWindow::OnWindowResizedFunc(
+    void XWindow::OnWindowResized(
         window_resized_callback cb
     )
     {
         m_WindowResizedCB = cb;
     }
 
-    void XWindow::OnWindowClosedFunc(
+    void XWindow::OnWindowClosed(
         window_closed_callback cb
     )
     {
         m_WindowClosedCB = cb;
     }
 
-    void XWindow::OnMouseMovedFunc(
+    void XWindow::OnMouseMoved(
         mouse_moved_callback cb
     )
     {
         m_MouseMovedCB = cb;
     }
 
-    void XWindow::OnMousePressedFunc(
+    void XWindow::OnMousePressed(
         mouse_pressed_callback cb
     )
     {
         m_MousePressedCB = cb;
     }
 
-    void XWindow::OnMouseReleasedFunc(
+    void XWindow::OnMouseReleased(
         mouse_released_callback cb
     )
     {
        m_MouseReleasedCB = cb;
     }
 
-    void XWindow::OnMouseScrolledFunc(
+    void XWindow::OnMouseScrolled(
         mouse_scrolled_callback cb
     )
     {
        m_MouseScrolledCB = cb;
     }
 
-    void XWindow::OnCharTypedFunc(
+    void XWindow::OnCharTyped(
         char_typed_callback cb
     )
     {
@@ -451,7 +465,7 @@ namespace awml {
         return m_Width == 0 && m_Height == 0;
     }
 
-    bool XWindow::KeyPressed(awml_key key_code)
+    bool XWindow::IsKeyPressed(awml_key key_code)
     {
         char key_map[32];
 

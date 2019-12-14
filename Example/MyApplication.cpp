@@ -1,6 +1,6 @@
+//#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
 #include <iostream>
 #include <math.h>
-
 #include <AWML/awml.h>
 
 int main()
@@ -14,7 +14,7 @@ int main()
         true
     );
 
-    window->OnKeyPressedFunc(
+    window->OnKeyPressed(
         [&window](awml_key key_code, bool repeated, uint16_t repeat_count)
         {
             if (key_code == awml_key::H)
@@ -26,9 +26,9 @@ int main()
             else if (key_code == awml_key::ESCAPE || key_code == awml_key::F8)
                 window->SetWindowMode(awml::WindowMode::WINDOWED);
             else if (key_code == awml_key::Q)
-                window->Resize(window->Width() + 100, window->Height() + 100);
+                window->Resize(window->GetWidth() + 100, window->GetHeight() + 100);
             else if (key_code == awml_key::E)
-                window->Resize(window->Width() - 100, window->Height() - 100);
+                window->Resize(window->GetWidth() - 100, window->GetHeight() - 100);
 
             std::cout
                 << key_code
@@ -41,7 +41,7 @@ int main()
         }
     );
 
-    window->OnKeyReleasedFunc(
+    window->OnKeyReleased(
         [](awml_key key_code)
         {
             std::cout
@@ -51,10 +51,11 @@ int main()
         }
     );
 
-    window->OnWindowResizedFunc(
+    window->OnWindowResized(
         [&window](uint16_t width, uint16_t height)
         {
-            glViewport(0, 0, window->Width(), window->Height());
+            
+            glViewport(0, 0, window->GetWidth(), window->GetHeight());
 
             std::cout <<
                 "Resized the window, New size: "
@@ -65,7 +66,7 @@ int main()
         }
     );
 
-    window->OnWindowClosedFunc(
+    window->OnWindowClosed(
         []()
         {
             std::cout << "Window terminated!"
@@ -73,7 +74,7 @@ int main()
         }
     );
 
-    window->OnMouseMovedFunc(
+    window->OnMouseMoved(
         [](uint16_t xpos, uint16_t ypos)
         {
             std::cout << "Mouse moved, x:"
@@ -84,7 +85,7 @@ int main()
         }
     );
 
-    window->OnMousePressedFunc(
+    window->OnMousePressed(
         [&window](awml_key code)
         {
             if (code == awml_key::MOUSE_LEFT)
@@ -99,7 +100,7 @@ int main()
         }
     );
 
-    window->OnMouseReleasedFunc(
+    window->OnMouseReleased(
         [](awml_key code)
         {
             std::cout
@@ -109,7 +110,7 @@ int main()
         }
     );
 
-    window->OnMouseScrolledFunc(
+    window->OnMouseScrolled(
         [](int16_t rotation, bool vertical)
         {
             static float red = 0.0f;
@@ -136,7 +137,7 @@ int main()
         }
     );
 
-    window->OnCharTypedFunc(
+    window->OnCharTyped(
         [](wchar_t typed_char)
         {
             // PS: Don't use cout with wchar_t.
@@ -146,7 +147,7 @@ int main()
         }
     );
 
-    window->OnErrorFunc(
+    window->OnError(
         [](awml::error code, const std::string& msg)
         {
             std::cout << "AWML ERROR: "
@@ -157,6 +158,83 @@ int main()
     );
 
     window->Launch();
+ 
+    const char* vertexShaderSource = "#version 330 core\n"
+        "layout (location = 0) in vec3 aPos;\n"
+        "void main()\n"
+        "{\n"
+        "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+        "}\0";
+    const char* fragmentShaderSource = "#version 330 core\n"
+        "out vec4 FragColor;\n"
+        "void main()\n"
+        "{\n"
+        "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+        "}\n\0";
+
+    int vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+    glCompileShader(vertexShader);
+    // check for shader compile errors
+    int success;
+    char infoLog[512];
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+        std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+    }
+    // fragment shader
+    int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+    glCompileShader(fragmentShader);
+    // check for shader compile errors
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
+    }
+    // link shaders
+    int shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
+    // check for linking errors
+    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
+    }
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
+    // set up vertex data (and buffer(s)) and configure vertex attributes
+    // ------------------------------------------------------------------
+    float vertices[] = {
+        -0.5f, -0.5f, 0.0f, // left  
+         0.5f, -0.5f, 0.0f, // right 
+         0.0f,  0.5f, 0.0f  // top   
+    };
+
+    unsigned int VBO, VAO;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
+    glBindVertexArray(VAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    // You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
+    // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
+    glBindVertexArray(0);
 
     while (!window->ShouldClose())
     {
@@ -166,23 +244,19 @@ int main()
             moving_x = -1.0f;
 
         moving_x += 0.01f;
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
 
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        glColor3f(
-            -sin(moving_x - 1.0f),
-            -cos(moving_x * 0.44f),
-             sin(moving_x * 0.24f)
-        );
-
-        glBegin(GL_TRIANGLES);
-        glVertex3f(-1.0f  + moving_x, -0.25f, 0.0f);
-        glVertex3f(-0.5f  + moving_x, -0.25f, 0.0f);
-        glVertex3f(-0.75f + moving_x,  0.25f, 0.0f);
-        glEnd();
+        // draw our first triangle
+        glUseProgram(shaderProgram);
+        glBindVertexArray(VAO); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
+        glDrawArrays(GL_TRIANGLES, 0, 3);
 
         window->Update();
     }
+
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
 
     return 0;
 }

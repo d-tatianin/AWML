@@ -1,8 +1,8 @@
 #ifdef _WIN32
-    #include "awml_windows.h"
+    #include "WindowsWindow.h"
     #define AWML_NATIVE_WINDOW WindowsWindow
 #elif defined(__linux__)
-    #include "awml_xwindow.h"
+    #include "XWindow.h"
     #define AWML_NATIVE_WINDOW XWindow
 #else
     #error Sorry, your platform is currently not supported!

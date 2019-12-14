@@ -2,7 +2,8 @@
 #include <string>
 #include <functional>
 
-#include "awml_windows.h"
+#include "WindowsGL.h"
+#include "WindowsWindow.h"
 
 #include "utilities.h"
 
@@ -53,6 +54,38 @@ namespace awml {
 
     bool WindowsOpenGLContext::Activate()
     {
+        int attriblist[] = 
+        {
+            WGL_CONTEXT_MAJOR_VERSION_ARB,
+            0,
+            WGL_CONTEXT_MINOR_VERSION_ARB,
+            0,
+            WGL_CONTEXT_PROFILE_MASK_ARB,
+            WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+            0,
+            0
+        };
+
+        wglMakeCurrent(m_Context, m_OpenGLContext);
+        if (!glLoader::Init())
+        {
+            m_Window->OnError(error::GENERIC, "Failed to initialize OpenGL");
+            return false;
+        }
+        auto glversion = glGetString(GL_VERSION);
+
+        attriblist[1] = glversion[0] - '0';
+        attriblist[3] = glversion[2] - '0';
+
+        if (!glLoader::LoadVersion(attriblist[1], attriblist[3]))
+        {
+            m_Window->OnError(error::GENERIC, "Failed to load OpenGL functions!");
+        }
+
+        wglMakeCurrent(m_Context, NULL);
+        wglDeleteContext(m_OpenGLContext);
+
+        m_OpenGLContext = wglCreateContextAttribsARB(m_Context, 0, attriblist);
         wglMakeCurrent(m_Context, m_OpenGLContext);
 
         return true;
@@ -295,13 +328,20 @@ namespace awml {
         SetWindowTextW(m_Window, m_WindowTitle.data());
     }
 
-    void WindowsWindow::Update()
+    bool WindowsWindow::EnsureAlive()
     {
         if (!m_Window)
         {
             OnError(error::NULL_WINDOW, "Cannot update a NULL window!");
-            return;
+            return false;
         }
+
+        return true;
+    }
+
+    void WindowsWindow::PollEvents()
+    {
+        if (!EnsureAlive()) return;
 
         auto message = MSG();
         while (PeekMessageW(&message, NULL, 0, 0, PM_REMOVE))
@@ -309,9 +349,22 @@ namespace awml {
             TranslateMessage(&message);
             DispatchMessageW(&message);
         }
+    }
+
+    void WindowsWindow::SwapBuffers()
+    {
+        if (!EnsureAlive()) return;
 
         if (m_Context)
             m_Context->SwapBuffers();
+    }
+
+    void WindowsWindow::Update()
+    {
+        if (!EnsureAlive()) return;
+
+        PollEvents();
+        SwapBuffers();
     }
 
     bool WindowsWindow::ShouldClose()
@@ -328,77 +381,82 @@ namespace awml {
         }
     }
 
-    uint16_t WindowsWindow::Width()
+    uint16_t WindowsWindow::GetWidth()
     {
         return m_RunningWidth;
     }
 
-    uint16_t WindowsWindow::Height()
+    uint16_t WindowsWindow::GetHeight()
     {
         return m_RunningHeight;
     }
 
-    uint16_t WindowsWindow::MouseX()
+    uint16_t WindowsWindow::GetMouseX()
     {
         return m_MouseX;
     }
     
-    uint16_t WindowsWindow::MouseY()
+    uint16_t WindowsWindow::GetMouseY()
     {
         return m_MouseY;
     }
 
-    void WindowsWindow::OnErrorFunc(error_callback cb)
+    std::pair<uint16_t, uint16_t> WindowsWindow::GetMouseCoords()
+    {
+        return { m_MouseX, m_MouseY };
+    }
+
+    void WindowsWindow::OnError(error_callback cb)
     {
         m_ErrorCB = cb;
     }
 
-    void WindowsWindow::OnKeyPressedFunc(key_pressed_callback cb)
+    void WindowsWindow::OnKeyPressed(key_pressed_callback cb)
     {
         m_KeyPressedCB = cb;
     }
 
-    void WindowsWindow::OnKeyReleasedFunc(key_released_callback cb)
+    void WindowsWindow::OnKeyReleased(key_released_callback cb)
     {
         m_KeyReleasedCB = cb;
     }
 
-    void WindowsWindow::OnWindowResizedFunc(window_resized_callback cb)
+    void WindowsWindow::OnWindowResized(window_resized_callback cb)
     {
         m_WindowResizedCB = cb;
     }
 
-    void WindowsWindow::OnWindowClosedFunc(window_closed_callback cb)
+    void WindowsWindow::OnWindowClosed(window_closed_callback cb)
     {
         m_WindowClosedCB = cb;
     }
 
-    void WindowsWindow::OnMouseMovedFunc(mouse_moved_callback cb)
+    void WindowsWindow::OnMouseMoved(mouse_moved_callback cb)
     {
         m_MouseMovedCB = cb;
     }
 
-    void WindowsWindow::OnMousePressedFunc(mouse_pressed_callback cb)
+    void WindowsWindow::OnMousePressed(mouse_pressed_callback cb)
     {
         m_MousePressedCB = cb;
     }
 
-    void WindowsWindow::OnMouseReleasedFunc(mouse_released_callback cb)
+    void WindowsWindow::OnMouseReleased(mouse_released_callback cb)
     {
         m_MouseReleasedCB = cb;
     }
 
-    void WindowsWindow::OnMouseScrolledFunc(mouse_scrolled_callback cb)
+    void WindowsWindow::OnMouseScrolled(mouse_scrolled_callback cb)
     {
         m_MouseScrolledCB = cb;
     }
 
-    void WindowsWindow::OnCharTypedFunc(char_typed_callback cb)
+    void WindowsWindow::OnCharTyped(char_typed_callback cb)
     {
         m_CharTypedCB = cb;
     }
 
-    bool WindowsWindow::KeyPressed(awml_key key_code)
+    bool WindowsWindow::IsKeyPressed(awml_key key_code)
     {
         return AWML_KEY_PRESSED_BIT &
             GetKeyState(static_cast<int>(key_code));

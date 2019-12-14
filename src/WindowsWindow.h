@@ -94,63 +94,69 @@ namespace awml {
 
         void SetTitle(const std::wstring& title) override;
 
+        void PollEvents() override;
+
+        void SwapBuffers() override;
+
         void Update() override;
 
         bool ShouldClose() override;
 
         void Close() override;
 
-        uint16_t Width() override;
+        uint16_t GetWidth() override;
 
-        uint16_t Height() override;
+        uint16_t GetHeight() override;
 
-        uint16_t MouseX() override;
+        std::pair<uint16_t, uint16_t> GetMouseCoords() override;
 
-        uint16_t MouseY() override;
+        uint16_t GetMouseX() override;
 
-        void OnErrorFunc(
+        uint16_t GetMouseY() override;
+
+        void OnError(
             error_callback cb
         ) override;
 
-        void OnKeyPressedFunc(
+        void OnKeyPressed(
             key_pressed_callback cb
         ) override;
 
-        void OnKeyReleasedFunc(
+        void OnKeyReleased(
             key_released_callback cb
         ) override;
 
-        void OnWindowResizedFunc(
+        void OnWindowResized(
             window_resized_callback cb
         ) override;
 
-        void OnWindowClosedFunc(
+        void OnWindowClosed(
             window_closed_callback cb
         ) override;
 
-        void OnMouseMovedFunc(
+        void OnMouseMoved(
             mouse_moved_callback cb
         ) override;
 
-        void OnMousePressedFunc(
+        void OnMousePressed(
             mouse_pressed_callback cb
         ) override;
 
-        void OnMouseReleasedFunc(
+        void OnMouseReleased(
             mouse_released_callback cb
         ) override;
 
-        void OnMouseScrolledFunc(
+        void OnMouseScrolled(
             mouse_scrolled_callback cb
         ) override;
 
-        void OnCharTypedFunc(
+        void OnCharTyped(
             char_typed_callback cb
         ) override;
 
         bool Minimized() override;
 
-        bool KeyPressed(awml_key key_code) override;
+        bool IsKeyPressed(awml_key key_code) override;
 
         void SetCursorMode(CursorMode cursor_mode) override;
 
@@ -162,6 +168,7 @@ namespace awml {
 
         ~WindowsWindow();
     private:
+        bool EnsureAlive();
 
         void SetResolution(uint16_t width, uint16_t height);
 

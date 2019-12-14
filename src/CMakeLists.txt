@@ -2,21 +2,25 @@ cmake_minimum_required(VERSION 3.6)
 
 project(AWML)
 
-include_directories("../include/AWML")
-
-file(GLOB INCLUDES "*.h")
-list(APPEND FILES ${INCLUDES})
+set(PROJECT_ROOT ../)
 
 if (WIN32)
-    list(APPEND FILES awml_windows.cpp)
-    list(REMOVE_ITEM FILES awml_xwindow.h)
-    list(APPEND FILES awml.cpp)
-    add_library(AWML STATIC ${FILES})
+    include_directories("${$PROJECT_ROOT}/include" "${PROJECT_ROOT}/include/AWML")
+    execute_process(
+        COMMAND python ${PROJECT_ROOT}/dependency_downloader.py ${PROJECT_ROOT}/include
+        RESULT_VARIABLE FAILED
+    )
+    if (FAILED)
+        message(FATAL_ERROR "-- Build cancelled since dependencies couldn't be donwloaded.")
+    endif()
+    file(GLOB AWML_SRC "Windows*")
+    list(APPEND AWML_SRC "awml.cpp")
+    add_library(AWML STATIC ${AWML_SRC})
+    target_link_libraries(AWML Opengl32)
 elseif (UNIX)
-    list(APPEND FILES awml_xwindow.cpp)
-    list(REMOVE_ITEM FILES awml_windows.h)
-    list(APPEND FILES awml.cpp)
-    add_library(AWML STATIC ${FILES})
-    target_link_libraries(AWML -lX11)
+    file(GLOB AWML_SRC "X*")
+    list(APPEND AWML_SRC "awml.cpp")
+    add_library(AWML STATIC ${AWML_SRC})
+    target_link_libraries(AWML X11 GL)
 endif()
 

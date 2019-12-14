@@ -7,9 +7,9 @@
 #include <X11/Xresource.h>
 #include <GL/glx.h>
 
-#include "key_codes.h"
+#include <AWML/key_codes.h>
 
-#include "awml.h"
+#include <AWML/awml.h>
 
 namespace awml {
 
@@ -88,6 +88,9 @@ namespace awml {
 
         void SetContext(window_context wc) override;
 
+        void PollEvents() override;
+        void SwapBuffers() override;
+
         void Update() override;
 
         void SetTitle(const std::wstring& title) override;
@@ -96,57 +99,56 @@ namespace awml {
 
         void Close() override;
 
-        uint16_t Width() override;
+        uint16_t GetWidth() override;
+        uint16_t GetHeight() override;
 
-        uint16_t Height() override;
+        uint16_t GetMouseX() override;
+        uint16_t GetMouseY() override;
+        std::pair<uint16_t, uint16_t> GetMouseCoords() override;
 
-        uint16_t MouseX() override;
-
-        uint16_t MouseY() override;
-
-        void OnErrorFunc(
+        void OnError(
             error_callback cb
         ) override;
 
-        void OnKeyPressedFunc(
+        void OnKeyPressed(
             key_pressed_callback cb
         ) override;
 
-        void OnKeyReleasedFunc(
+        void OnKeyReleased(
             key_released_callback cb
         ) override;
 
-        void OnWindowResizedFunc(
+        void OnWindowResized(
             window_resized_callback cb
         ) override;
 
-        void OnWindowClosedFunc(
+        void OnWindowClosed(
             window_closed_callback cb
         ) override;
 
-        void OnMouseMovedFunc(
+        void OnMouseMoved(
             mouse_moved_callback cb
         ) override;
 
-        void OnMousePressedFunc(
+        void OnMousePressed(
             mouse_pressed_callback cb
         ) override;
 
-        void OnMouseReleasedFunc(
+        void OnMouseReleased(
             mouse_released_callback cb
         ) override;
 
-        void OnMouseScrolledFunc(
+        void OnMouseScrolled(
             mouse_scrolled_callback cb
         ) override;
 
-        void OnCharTypedFunc(
+        void OnCharTyped(
             char_typed_callback cb
         ) override;
 
         bool Minimized() override;
 
-        bool KeyPressed(awml_key key_code) override;
+        bool IsKeyPressed(awml_key key_code) override;
 
         void SetCursorMode(CursorMode cursor_mode) override;
 

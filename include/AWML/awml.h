@@ -6,7 +6,7 @@
   #include <windows.h>
 #endif
 
-#include <GL/gl.h>
+#include "awml_gl.h"
 
 #include "key_codes.h"
 
@@ -160,7 +160,7 @@ namespace awml {
             const std::wstring& title,
             uint16_t width,
             uint16_t height,
-            Context context,
+            Context context = Context::NONE,
             WindowMode window_mode = WindowMode::WINDOWED,
             CursorMode cursor_mode = CursorMode::VISIBLE | CursorMode::FREE,
             bool resizable = false
@@ -177,63 +177,66 @@ namespace awml {
     public:
         virtual void Launch() = 0;
 
-        virtual void OnErrorFunc(
+        virtual void OnError(
             error_callback cb
         ) = 0;
 
-        virtual void OnKeyPressedFunc(
+        virtual void OnKeyPressed(
             key_pressed_callback cb
         ) = 0;
 
-        virtual void OnKeyReleasedFunc(
+        virtual void OnKeyReleased(
             key_released_callback cb
         ) = 0;
 
-        virtual void OnWindowResizedFunc(
+        virtual void OnWindowResized(
             window_resized_callback cb
         ) = 0;
 
-        virtual void OnWindowClosedFunc(
+        virtual void OnWindowClosed(
             window_closed_callback cb
         ) = 0;
 
-        virtual void OnMouseMovedFunc(
+        virtual void OnMouseMoved(
             mouse_moved_callback cb
         ) = 0;
 
-        virtual void OnMousePressedFunc(
+        virtual void OnMousePressed(
             mouse_pressed_callback cb
         ) = 0;
 
-        virtual void OnMouseReleasedFunc(
+        virtual void OnMouseReleased(
             mouse_released_callback cb
         ) = 0;
 
-        virtual void OnMouseScrolledFunc(
+        virtual void OnMouseScrolled(
             mouse_scrolled_callback cb
         ) = 0;
 
-        virtual void OnCharTypedFunc(
+        virtual void OnCharTyped(
             char_typed_callback cb
         ) = 0;
 
         virtual void SetTitle(const std::wstring& title) = 0;
 
+        virtual void PollEvents() = 0;
+        virtual void SwapBuffers() = 0;
         virtual void Update() = 0;
 
         virtual bool ShouldClose() = 0;
 
         virtual void Close() = 0;
 
-        virtual uint16_t Width() = 0;
-        virtual uint16_t Height() = 0;
+        virtual uint16_t GetWidth() = 0;
+        virtual uint16_t GetHeight() = 0;
 
-        virtual uint16_t MouseX() = 0;
-        virtual uint16_t MouseY() = 0;
+        virtual uint16_t GetMouseX() = 0;
+        virtual uint16_t GetMouseY() = 0;
+        virtual std::pair<uint16_t, uint16_t> GetMouseCoords() = 0;
 
         virtual bool Minimized() = 0;
 
-        virtual bool KeyPressed(awml_key key_code) = 0;
+        virtual bool IsKeyPressed(awml_key key_code) = 0;
 
         virtual void SetCursorMode(CursorMode cursor_mode) = 0;
 
