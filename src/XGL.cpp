@@ -1,8 +1,11 @@
 #include <GL/glcorearb.h>
 #include <GL/glext.h>
 #include <GL/glx.h>
-
+#include <iostream>
 #include "XGL.h"
+
+
+GLXCREATECONTEXTATTRIBSARBPROC                       awml_glXCreateContextAttribsARB;
 
 // 1.5
 PFNGLGENQUERIESPROC                                  awml_glGenQueries;
@@ -610,6 +613,11 @@ namespace awml {
 
     bool glLoader::Init()
     {
+        awml_glXCreateContextAttribsARB = (GLXCREATECONTEXTATTRIBSARBPROC) glXGetProcAddressARB((const GLubyte*) "glXCreateContextAttribsARB");
+
+        if (!awml_glXCreateContextAttribsARB)
+            return false;
+
         return true;
     }
 
@@ -620,7 +628,7 @@ namespace awml {
         loaded = true;
 
         try {
-            if (major >= 1 && minor >= 5)
+            if (major > 2 || (major == 1 && minor >= 5))
             {
                 awml_glGenQueries                                  = (PFNGLGENQUERIESPROC)                                  try_load("glGenQueries");
                 awml_glDeleteQueries                               = (PFNGLDELETEQUERIESPROC)                               try_load("glDeleteQueries");
@@ -738,7 +746,7 @@ namespace awml {
                 awml_glVertexAttrib4usv                            = (PFNGLVERTEXATTRIB4USVPROC)                            try_load("glVertexAttrib4usv");
                 awml_glVertexAttribPointer                         = (PFNGLVERTEXATTRIBPOINTERPROC)                         try_load("glVertexAttribPointer");
             }
-            if (major >= 2 && minor >= 1)
+            if (major > 2 || (major == 2 && minor >= 1))
             {
                 awml_glUniformMatrix2x3fv                          = (PFNGLUNIFORMMATRIX2X3FVPROC)                          try_load("glUniformMatrix2x3fv");
                 awml_glUniformMatrix3x2fv                          = (PFNGLUNIFORMMATRIX3X2FVPROC)                          try_load("glUniformMatrix3x2fv");
@@ -834,7 +842,7 @@ namespace awml {
                 awml_glGenVertexArrays                             = (PFNGLGENVERTEXARRAYSPROC)                             try_load("glGenVertexArrays");
                 awml_glIsVertexArray                               = (PFNGLISVERTEXARRAYPROC)                               try_load("glIsVertexArray");
             }
-            if (major >= 3 && minor >= 1)
+            if (major > 3 || (major == 3 && minor >= 1))
             {
                 awml_glDrawArraysInstanced                         = (PFNGLDRAWARRAYSINSTANCEDPROC)                         try_load("glDrawArraysInstanced");
                 awml_glDrawElementsInstanced                       = (PFNGLDRAWELEMENTSINSTANCEDPROC)                       try_load("glDrawElementsInstanced");
@@ -849,7 +857,7 @@ namespace awml {
                 awml_glGetActiveUniformBlockName                   = (PFNGLGETACTIVEUNIFORMBLOCKNAMEPROC)                   try_load("glGetActiveUniformBlockName");
                 awml_glUniformBlockBinding                         = (PFNGLUNIFORMBLOCKBINDINGPROC)                         try_load("glUniformBlockBinding");
             }
-            if (major >= 3 && minor >= 2)
+            if (major > 3 || (major == 3 && minor >= 2))
             {
                 awml_glDrawElementsBaseVertex                      = (PFNGLDRAWELEMENTSBASEVERTEXPROC)                      try_load("glDrawElementsBaseVertex");
                 awml_glDrawRangeElementsBaseVertex                 = (PFNGLDRAWRANGEELEMENTSBASEVERTEXPROC)                 try_load("glDrawRangeElementsBaseVertex");
@@ -871,7 +879,7 @@ namespace awml {
                 awml_glGetMultisamplefv                            = (PFNGLGETMULTISAMPLEFVPROC)                            try_load("glGetMultisamplefv");
                 awml_glSampleMaski                                 = (PFNGLSAMPLEMASKIPROC)                                 try_load("glSampleMaski");
             }
-            if (major >= 3 && minor >= 3)
+            if (major > 3 || (major == 3 && minor >= 3))
             {
                 awml_glBindFragDataLocationIndexed                 = (PFNGLBINDFRAGDATALOCATIONINDEXEDPROC)                 try_load("glBindFragDataLocationIndexed");
                 awml_glGetFragDataIndex                            = (PFNGLGETFRAGDATAINDEXPROC)                            try_load("glGetFragDataIndex");
@@ -951,7 +959,7 @@ namespace awml {
                 awml_glEndQueryIndexed                             = (PFNGLENDQUERYINDEXEDPROC)                             try_load("glEndQueryIndexed");
                 awml_glGetQueryIndexediv                           = (PFNGLGETQUERYINDEXEDIVPROC)                           try_load("glGetQueryIndexediv");
             }
-            if (major >= 4 && minor >= 1)
+            if (major > 4 || (major == 4 && minor >= 1))
             {
                 awml_glReleaseShaderCompiler                       = (PFNGLRELEASESHADERCOMPILERPROC)                       try_load("glReleaseShaderCompiler");
                 awml_glShaderBinary                                = (PFNGLSHADERBINARYPROC)                                try_load("glShaderBinary");
@@ -1042,7 +1050,7 @@ namespace awml {
                 awml_glGetFloati_v                                 = (PFNGLGETFLOATI_VPROC)                                 try_load("glGetFloati_v");
                 awml_glGetDoublei_v                                = (PFNGLGETDOUBLEI_VPROC)                                try_load("glGetDoublei_v");
             }
-            if (major >= 4 && minor >= 2)
+            if (major > 4 || (major == 4 && minor >= 2))
             {
                 awml_glDrawArraysInstancedBaseInstance             = (PFNGLDRAWARRAYSINSTANCEDBASEINSTANCEPROC)             try_load("glDrawArraysInstancedBaseInstance");
                 awml_glDrawElementsInstancedBaseInstance           = (PFNGLDRAWELEMENTSINSTANCEDBASEINSTANCEPROC)           try_load("glDrawElementsInstancedBaseInstance");
@@ -1057,7 +1065,7 @@ namespace awml {
                 awml_glDrawTransformFeedbackInstanced              = (PFNGLDRAWTRANSFORMFEEDBACKINSTANCEDPROC)              try_load("glDrawTransformFeedbackInstanced");
                 awml_glDrawTransformFeedbackStreamInstanced        = (PFNGLDRAWTRANSFORMFEEDBACKSTREAMINSTANCEDPROC)        try_load("glDrawTransformFeedbackStreamInstanced");
             }
-            if (major >= 4 && minor >= 3)
+            if (major > 4 || (major == 4 && minor >= 3))
             {
                 awml_glClearBufferData                             = (PFNGLCLEARBUFFERDATAPROC)                             try_load("glClearBufferData");
                 awml_glClearBufferSubData                          = (PFNGLCLEARBUFFERSUBDATAPROC)                          try_load("glClearBufferSubData");
@@ -1103,7 +1111,7 @@ namespace awml {
                 awml_glObjectPtrLabel                              = (PFNGLOBJECTPTRLABELPROC)                              try_load("glObjectPtrLabel");
                 awml_glGetObjectPtrLabel                           = (PFNGLGETOBJECTPTRLABELPROC)                           try_load("glGetObjectPtrLabel");
             }
-            if (major >= 4 && minor >= 4)
+            if (major > 4 || (major == 4 && minor >= 4))
             {
                 awml_glBufferStorage                               = (PFNGLBUFFERSTORAGEPROC)                               try_load("glBufferStorage");
                 awml_glClearTexImage                               = (PFNGLCLEARTEXIMAGEPROC)                               try_load("glClearTexImage");
@@ -1115,7 +1123,7 @@ namespace awml {
                 awml_glBindImageTextures                           = (PFNGLBINDIMAGETEXTURESPROC)                           try_load("glBindImageTextures");
                 awml_glBindVertexBuffers                           = (PFNGLBINDVERTEXBUFFERSPROC)                           try_load("glBindVertexBuffers");
             }
-            if (major >= 4 && minor >= 5)
+            if (major > 4 || (major == 4 && minor >= 5))
             {
                 awml_glClipControl                                 = (PFNGLCLIPCONTROLPROC)                                 try_load("glClipControl");
                 awml_glCreateTransformFeedbacks                    = (PFNGLCREATETRANSFORMFEEDBACKSPROC)                    try_load("glCreateTransformFeedbacks");
@@ -1228,7 +1236,7 @@ namespace awml {
                 awml_glReadnPixels                                 = (PFNGLREADNPIXELSPROC)                                 try_load("glReadnPixels");
                 awml_glTextureBarrier                              = (PFNGLTEXTUREBARRIERPROC)                              try_load("glTextureBarrier");
             }
-            if (major >= 4 && minor >= 6)
+            if (major > 4 || (major == 4 && minor >= 6))
             {
                 awml_glSpecializeShader                            = (PFNGLSPECIALIZESHADERPROC)                            try_load("glSpecializeShader");
                 awml_glMultiDrawArraysIndirectCount                = (PFNGLMULTIDRAWARRAYSINDIRECTCOUNTPROC)                try_load("glMultiDrawArraysIndirectCount");
@@ -1251,14 +1259,26 @@ namespace awml {
 
         func_ptr = (void*)glXGetProcAddress((const unsigned char*)func);
 
-        if (!func_ptr)
+        if (!valid(func_ptr))
         {
             func_ptr = (void*)glXGetProcAddressARB((const unsigned char*)func);
         }
 
-        if (!func_ptr)
+        if (!valid(func_ptr))
             throw std::runtime_error(func);
 
         return func_ptr;
+    }
+
+    bool glLoader::valid(void* func)
+    {
+        if ((func == 0)          ||
+            (func == (void*)0x1) ||
+            (func == (void*)0x2) ||
+            (func == (void*)0x3) ||
+            (func == (void*)-1))
+            return false;
+
+        return true;
     }
 }

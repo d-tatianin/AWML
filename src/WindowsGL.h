@@ -8,5 +8,6 @@ namespace awml {
         static bool LoadVersion(char major, char minor);
     private:
         static void* try_load(const char* func);
+        static bool  valid(void* func);
     };
 }

@@ -6,6 +6,7 @@
 #include <X11/XKBlib.h>
 
 #include "XWindow.h"
+#include "XGL.h"
 
 namespace awml {
 
@@ -16,7 +17,7 @@ namespace awml {
         m_Attribs(),
         m_OpenGLContext(),
         m_WinAttribs(),
-        m_Props()
+        m_BestFBC()
     {
     }
 
@@ -24,31 +25,155 @@ namespace awml {
     {
         m_Parent = static_cast<XWindow*>(self);
 
-        m_Props[0] = GLX_RGBA;
-        m_Props[1] = GLX_DEPTH_SIZE;
-        m_Props[2] = 24;
-        m_Props[3] = GLX_DOUBLEBUFFER;
-        m_Props[4] = None;
+        GLint visual_attribs[] =
+        {
+            GLX_X_RENDERABLE,  True,
+            GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
+            GLX_RENDER_TYPE,   GLX_RGBA_BIT,
+            GLX_X_VISUAL_TYPE, GLX_TRUE_COLOR,
+            GLX_RED_SIZE,      8,
+            GLX_GREEN_SIZE,    8,
+            GLX_BLUE_SIZE,     8,
+            GLX_ALPHA_SIZE,    8,
+            GLX_DEPTH_SIZE,    24,
+            GLX_STENCIL_SIZE,  8,
+            GLX_DOUBLEBUFFER,  True,
+            None
+        };
 
-        m_VisualInfo = glXChooseVisual(
-            m_Parent->m_Connection,
-            0,
-            m_Props
-        );
+        int glxmajor;
+        int glxminor;
+
+        if (!glXQueryVersion(m_Parent->m_Connection, &glxmajor, &glxminor) ||
+            ((glxmajor == 1) && (glxminor < 3)) || (glxmajor < 1))
+        {
+            m_Parent->NotifyError(error::CONTEXT, "Invalid OpenGL version");
+            return false;
+        }
+
+        GLint fb_count;
+        GLXFBConfig* fbc =
+            glXChooseFBConfig(
+                m_Parent->m_Connection,
+                DefaultScreen(m_Parent->m_Connection),
+                visual_attribs,
+                &fb_count
+            );
+
+        if (!fbc)
+        {
+            m_Parent->NotifyError(error::CONTEXT, "Failed to setup OpenGL context");
+            return false;
+        }
+
+        int best_fbc       = -1,
+            worst_fbc      = -1,
+            best_num_samp  = -1,
+            worst_num_samp = 999;
+
+        int i;
+        for (i = 0; i < fb_count; ++i)
+        {
+            XVisualInfo* vi = glXGetVisualFromFBConfig(m_Parent->m_Connection, fbc[i]);
+            if (vi)
+            {
+                int samp_buf, samples;
+                glXGetFBConfigAttrib(m_Parent->m_Connection, fbc[i], GLX_SAMPLE_BUFFERS, &samp_buf);
+                glXGetFBConfigAttrib(m_Parent->m_Connection, fbc[i], GLX_SAMPLES, &samples);
+
+                if (best_fbc < 0 || samp_buf && samples > best_num_samp)
+                {
+                    best_fbc = i;
+                    best_num_samp = samples;
+                }
+
+                if (worst_fbc < 0 || !samp_buf || samples < worst_num_samp)
+                {
+                    worst_fbc = i;
+                    worst_num_samp = samples;
+                }
+            }
+
+            XFree(vi);
+        }
+
+        m_BestFBC = fbc[best_fbc];
+
+        XFree(fbc);
+
+        m_VisualInfo = 
+            glXGetVisualFromFBConfig(
+                m_Parent->m_Connection,
+                m_BestFBC
+            );
 
         m_ColorMap = XCreateColormap(
             m_Parent->m_Connection,
-            DefaultRootWindow(m_Parent->m_Connection),
+            RootWindow(m_Parent->m_Connection, m_VisualInfo->screen),
             m_VisualInfo->visual,
             AllocNone
         );
 
-        m_OpenGLContext =
-            glXCreateContext(
+        m_Attribs.colormap = m_ColorMap;
+        m_Attribs.background_pixmap = None;
+        m_Attribs.border_pixel = 0;
+        m_Attribs.event_mask = StructureNotifyMask;
+
+        return true;
+    }
+
+    XVisualInfo* XOpenGLContext::GetVisualInfo()
+    {
+        if (!EnsureSetup())
+            return nullptr;
+
+        if (!m_VisualInfo)
+        {
+            m_Parent->NotifyError(error::CONTEXT, "Failed to create an OpenGL context!");
+            return nullptr;
+        }
+
+        return m_VisualInfo;
+    }
+
+    XSetWindowAttributes* XOpenGLContext::GetAttribsPtr()
+    {
+        if (!EnsureSetup())
+            return nullptr;
+
+        if (!m_Attribs.colormap)
+        {
+            m_Parent->NotifyError(error::CONTEXT, "Failed to create an OpenGL context!");
+            return nullptr;
+        }
+
+        return &m_Attribs;
+    }
+    
+    bool XOpenGLContext::Activate()
+    {
+        if (!EnsureSetup())
+            return false;
+
+        int context_attribs[] =
+        {
+            GLX_CONTEXT_MAJOR_VERSION_ARB, 1,
+            GLX_CONTEXT_MINOR_VERSION_ARB, 0,
+            None
+        };
+
+        if (!glLoader::Init())
+        {
+            m_Parent->NotifyError(error::CONTEXT, "Failed to create an OpenGL context!");
+            return false;
+        }
+
+        m_OpenGLContext = 
+            glXCreateContextAttribsARB(
                 m_Parent->m_Connection,
-                m_VisualInfo,
-                NULL,
-                GL_TRUE
+                m_BestFBC, 0,
+                True,
+                context_attribs
             );
 
         if (!m_OpenGLContext)
@@ -57,22 +182,18 @@ namespace awml {
             return false;
         }
 
-        return true;
-    }
-
-    bool XOpenGLContext::Activate()
-    {
-        if (!m_OpenGLContext)
-        {
-            m_Parent->NotifyError(error::CONTEXT, "Cannot activate a null context!");
-            return false;
-        }
-
         glXMakeCurrent(
             m_Parent->m_Connection,
             m_Parent->m_Window,
             m_OpenGLContext
         );
+
+        auto glversion = glGetString(GL_VERSION);
+        char major = glversion[0] - '0';
+        char minor = glversion[2] - '0';
+
+        if (!glLoader::LoadVersion(major, minor))
+            return false;
 
         return true;
     }
@@ -179,19 +300,45 @@ namespace awml {
             return false;
         }
 
-        uint32_t screen_num = DefaultScreen(m_Connection);
-        uint32_t background_color = BlackPixel(m_Connection, screen_num);
-        uint32_t border_color = WhitePixel(m_Connection, screen_num);
+        if (m_ContextType == Context::NONE)
+        {
+            uint32_t screen_num = DefaultScreen(m_Connection);
+            uint32_t background_color = BlackPixel(m_Connection, screen_num);
+            uint32_t border_color = WhitePixel(m_Connection, screen_num);
 
-        m_Window = XCreateSimpleWindow(
-            m_Connection,
-            DefaultRootWindow(m_Connection),
-            0, 0,
-            m_Width,
-            m_Height,
-            2, border_color,
-            background_color
-        );
+            m_Window = XCreateSimpleWindow(
+                m_Connection,
+                DefaultRootWindow(m_Connection),
+                0, 0,
+                m_Width,
+                m_Height,
+                2, border_color,
+                background_color
+            );
+        }
+        else if (m_ContextType == Context::OpenGL)
+        {
+            m_Context = std::make_unique<XOpenGLContext>();
+            m_Context->Setup(this);
+
+            auto visual_info = ((XOpenGLContext*)m_Context.get())->GetVisualInfo();
+            auto attribs_ptr = ((XOpenGLContext*)m_Context.get())->GetAttribsPtr();
+
+            if (!visual_info || !attribs_ptr)
+                return false;
+
+            m_Window = XCreateWindow(
+                m_Connection,
+                RootWindow(m_Connection, visual_info->screen),
+                0, 0,
+                m_Width,
+                m_Height,
+                0, visual_info->depth,
+                InputOutput, visual_info->visual,
+                CWBorderPixel | CWColormap | CWEventMask,
+                attribs_ptr
+            );
+        }
 
         if (!m_Window)
             NotifyError(
@@ -217,15 +364,10 @@ namespace awml {
         Atom WM_DELETE_WINDOW = XInternAtom(m_Connection, "WM_DELETE_WINDOW", False);
         XSetWMProtocols(m_Connection, m_Window, &WM_DELETE_WINDOW, 1);
 
-        switch (m_ContextType)
-        {
-            case Context::OpenGL:
-                if (!SetContext(std::make_unique<XOpenGLContext>()))
-                    return false;
-                break;
-            default:
-                break;
-        }
+        if (!m_Context->Activate())
+            return false;
+
+        return true;
     }
 
     void XWindow::UpdateWindowTitle()
@@ -269,13 +411,11 @@ namespace awml {
 
     bool XWindow::SetContext(window_context wc) 
     {
-        m_Context.reset(wc.release());
+        // Dynamically switching contexts is currently
+        // not supported. Hopefully later?
+        // m_Context.reset(wc.release());
 
-        if (!m_Context->Setup(this))
-            return false;
-
-        if (!m_Context->Activate())
-            return false;
+        
 
         return true;
     }

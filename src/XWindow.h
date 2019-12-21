@@ -8,7 +8,6 @@
 #include <GL/glx.h>
 
 #include <AWML/key_codes.h>
-
 #include <AWML/awml.h>
 
 namespace awml {
@@ -24,7 +23,7 @@ namespace awml {
         XSetWindowAttributes m_Attribs;
         GLXContext           m_OpenGLContext;
         XWindowAttributes    m_WinAttribs;
-        GLint                m_Props[5];
+        GLXFBConfig          m_BestFBC;
     public:
         XOpenGLContext();
 
@@ -32,6 +31,9 @@ namespace awml {
         bool Activate() override;
         void MakeCurrent() override;
         void SwapBuffers() override;
+
+        XVisualInfo* GetVisualInfo();
+        XSetWindowAttributes* GetAttribsPtr();
 
         ~XOpenGLContext();
     private:
