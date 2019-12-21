@@ -1,6 +1,7 @@
 #include <string>
 #include <clocale>
 #include <cstring>
+#include <stdexcept>
 
 #include <X11/XKBlib.h>
 
@@ -50,11 +51,23 @@ namespace awml {
                 GL_TRUE
             );
 
+        if (!m_OpenGLContext)
+        {
+            m_Parent->NotifyError(error::CONTEXT, "Failed to create an OpenGL context!");
+            return false;
+        }
+
         return true;
     }
 
     bool XOpenGLContext::Activate()
     {
+        if (!m_OpenGLContext)
+        {
+            m_Parent->NotifyError(error::CONTEXT, "Cannot activate a null context!");
+            return false;
+        }
+
         glXMakeCurrent(
             m_Parent->m_Connection,
             m_Parent->m_Window,
@@ -66,24 +79,56 @@ namespace awml {
 
     void XOpenGLContext::SwapBuffers()
     {
+        if (!m_OpenGLContext)
+        {
+            m_Parent->NotifyError(error::CONTEXT, "Cannot swap buffers for null context!");
+            return;
+        }
+
         glXSwapBuffers(
             m_Parent->m_Connection,
             m_Parent->m_Window
         );
     }
 
-    XOpenGLContext::~XOpenGLContext()
+    bool XOpenGLContext::EnsureSetup()
     {
+        return m_Parent;
+    }
+
+    void XOpenGLContext::MakeCurrent()
+    {
+        if (!EnsureSetup())
+            return;
+
+        if (!m_OpenGLContext)
+        {
+            m_Parent->NotifyError(error::CONTEXT, "Cannot make null context current!");
+            return;
+        }
+
         glXMakeCurrent(
             m_Parent->m_Connection,
-            None,
-            NULL
-        );
-
-        glXDestroyContext(
-            m_Parent->m_Connection,
+            m_Parent->m_Window,
             m_OpenGLContext
         );
+    }
+
+    XOpenGLContext::~XOpenGLContext()
+    {
+        if (m_OpenGLContext)
+        {
+            glXMakeCurrent(
+                m_Parent->m_Connection,
+                None,
+                NULL
+            );
+
+            glXDestroyContext(
+                m_Parent->m_Connection,
+                m_OpenGLContext
+            );
+        }
 
         m_Parent->Close();
     }
@@ -108,20 +153,30 @@ namespace awml {
         setlocale(LC_ALL, "en_US.utf8");
     }
 
-    void XWindow::Launch()
+    bool XWindow::EnsureAlive()
+    {
+        if (!m_Window || !m_Connection)
+        {
+            NotifyError(error::WINDOW, "Window has not yet been launched!");
+            return false;
+        }
+
+        return true;
+    }
+
+    bool XWindow::Launch()
     {
         m_Connection = XOpenDisplay(NULL);
         XkbSetDetectableAutoRepeat(m_Connection, true, NULL);
 
         if (!m_Connection)
         {
-            if (m_ErrorCB)
-                m_ErrorCB(
-                    error::NULL_WINDOW,
-                    "Could not establish connection with the X server!"
-                );
+            NotifyError(
+                error::WINDOW,
+                "Could not establish connection with the X server!"
+            );
 
-            return;
+            return false;
         }
 
         uint32_t screen_num = DefaultScreen(m_Connection);
@@ -138,7 +193,13 @@ namespace awml {
             background_color
         );
 
-        SetWindowTitle();
+        if (!m_Window)
+            NotifyError(
+                error::WINDOW,
+                "Failed to create a window!"
+            );
+
+        UpdateWindowTitle();
 
         XSelectInput(
             m_Connection,
@@ -159,27 +220,25 @@ namespace awml {
         switch (m_ContextType)
         {
             case Context::OpenGL:
-                SetContext(
-                    std::make_unique<XOpenGLContext>()
-                );
+                if (!SetContext(std::make_unique<XOpenGLContext>()))
+                    return false;
                 break;
             default:
                 break;
         }
     }
 
-    void XWindow::SetWindowTitle()
+    void XWindow::UpdateWindowTitle()
     {
         size_t title_size = m_Title.size() * 2;
         char* title = static_cast<char*>(alloca(title_size));
         auto final_size = wcstombs(title, m_Title.data(), title_size);
         if (final_size == SIZE_MAX)
         {
-            if (m_ErrorCB)
-                m_ErrorCB(
-                    error::GENERIC,
-                    "Failed to convert the window title to UTF-8, title will not be set."
-                );
+            NotifyError(
+                error::GENERIC,
+                "Failed to convert the window title to UTF-8, title will not be set."
+            );
             return;
         }
         title[final_size] = '\0';
@@ -199,13 +258,26 @@ namespace awml {
         );
     }
 
-    void XWindow::SetContext(window_context wc) 
+    void XWindow::NotifyError(error code, const std::string& message)
+    {
+        if (m_ErrorCB)
+            m_ErrorCB(code, message);
+        else
+            // TODO: Replace with an awml specific error class
+            throw std::runtime_error(message);
+    }
+
+    bool XWindow::SetContext(window_context wc) 
     {
         m_Context.reset(wc.release());
 
-        m_Context->Setup(this);
+        if (!m_Context->Setup(this))
+            return false;
 
-        m_Context->Activate();
+        if (!m_Context->Activate())
+            return false;
+
+        return true;
     }
 
     void XWindow::PollEvents()
@@ -334,6 +406,17 @@ namespace awml {
             m_Context->SwapBuffers();
     }
 
+    void XWindow::MakeCurrent()
+    {
+        if (!EnsureAlive())
+            return;
+
+        if (m_Context)
+            m_Context->MakeCurrent();
+        else
+            NotifyError(error::CONTEXT, "Cannot make NULL context current!");
+    }
+
     void XWindow::Update() 
     {
         PollEvents();
@@ -343,7 +426,7 @@ namespace awml {
     void XWindow::SetTitle(const std::wstring& title)
     {
         m_Title = title;
-        SetWindowTitle();
+        UpdateWindowTitle();
     }
 
     bool XWindow::ShouldClose()
@@ -526,7 +609,7 @@ namespace awml {
         );
 
         // This is not how you actually get the typed char
-        // To be fixed later.
+        // To be fixed later. (its like 2k lines to get this working btw)
         //static_cast<wchar_t>(*XKeysymToString(key_sym))
 
         return static_cast<wchar_t>(0);

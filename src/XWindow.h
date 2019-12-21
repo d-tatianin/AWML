@@ -30,9 +30,12 @@ namespace awml {
 
         bool Setup(Window* self) override;
         bool Activate() override;
+        void MakeCurrent() override;
         void SwapBuffers() override;
 
         ~XOpenGLContext();
+    private:
+        bool EnsureSetup();
     };
 
     class XWindow : public Window
@@ -84,9 +87,9 @@ namespace awml {
             bool resizable
         );
 
-        void Launch() override;
+        bool Launch() override;
 
-        void SetContext(window_context wc) override;
+        bool SetContext(window_context wc) override;
 
         void PollEvents() override;
         void SwapBuffers() override;
@@ -158,9 +161,15 @@ namespace awml {
 
         void* GetNativeHandle() override;
 
+        void MakeCurrent() override;
+
         ~XWindow();
     private:
-        void SetWindowTitle();
+        bool EnsureAlive();
+
+        void NotifyError(error code, const std::string& message);
+
+        void UpdateWindowTitle();
 
         awml_key NormalizeKeyPress();
 

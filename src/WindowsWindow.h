@@ -17,7 +17,7 @@ namespace awml {
     private:
         HDC m_Context;
         HGLRC m_OpenGLContext;
-        WindowsWindow* m_Window;
+        WindowsWindow* m_Parent;
         int m_Format;
     public:
         WindowsOpenGLContext();
@@ -25,8 +25,11 @@ namespace awml {
         bool Setup(Window* self) override;
         bool Activate() override;
         void SwapBuffers() override;
+        void MakeCurrent() override;
 
         ~WindowsOpenGLContext();
+    private:
+        bool EnsureSetup();
     };
 
     class WindowsWindow : public Window
@@ -88,11 +91,14 @@ namespace awml {
             bool resizable
         );
 
-        void Launch() override;
 
-        void SetContext(window_context wc) override;
+        bool Launch() override;
+
+        bool SetContext(window_context wc) override;
 
         void SetTitle(const std::wstring& title) override;
+
+        void MakeCurrent() override;
 
         void PollEvents() override;
 
@@ -174,7 +180,7 @@ namespace awml {
 
         void RecalculateNative();
 
-        void OnError(error code, const std::string& msg);
+        void NotifyError(error code, const std::string& msg);
 
         void OnWindowResized(WORD width, WORD height);
 

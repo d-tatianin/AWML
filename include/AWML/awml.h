@@ -113,8 +113,9 @@ namespace awml {
     {
         OK          = 0,
         GENERIC     = 1,
-        NULL_WINDOW = 2,
-        BAD_ARGS    = 3
+        WINDOW      = 2,
+        ARGS        = 3,
+        CONTEXT     = 4
     };
 
     // A callback that gets called when an internal AWML error happens.
@@ -130,8 +131,8 @@ namespace awml {
         {
         case error::OK:          return "NO ERROR";
         case error::GENERIC:     return "GENERIC ERROR";
-        case error::NULL_WINDOW: return "NULL WINDOW";
-        case error::BAD_ARGS:    return "BAD ARGS";
+        case error::WINDOW:      return "WINDOW ERROR";
+        case error::ARGS:        return "ARGUMENT ERROR";
         default:                 return "UNKNOWN ERROR";
         }
     }
@@ -144,6 +145,7 @@ namespace awml {
         virtual bool Setup(Window* self) = 0;
         virtual bool Activate() = 0;
         virtual void SwapBuffers() = 0;
+        virtual void MakeCurrent() = 0;
         virtual ~GraphicsContext() {}
     };
 
@@ -171,11 +173,11 @@ namespace awml {
     protected:
         Window() {}
 
-        virtual void SetContext(
+        virtual bool SetContext(
             window_context wc
         ) = 0;
     public:
-        virtual void Launch() = 0;
+        virtual bool Launch() = 0;
 
         virtual void OnError(
             error_callback cb
@@ -218,6 +220,8 @@ namespace awml {
         ) = 0;
 
         virtual void SetTitle(const std::wstring& title) = 0;
+
+        virtual void MakeCurrent() = 0;
 
         virtual void PollEvents() = 0;
         virtual void SwapBuffers() = 0;

@@ -13,13 +13,18 @@ namespace awml {
         : m_Context(),
         m_OpenGLContext(),
         m_Format(),
-        m_Window()
+        m_Parent()
     {
+    }
+
+    bool WindowsOpenGLContext::EnsureSetup()
+    {
+        return m_Parent;
     }
 
     bool WindowsOpenGLContext::Setup(Window* self)
     {
-        m_Window = static_cast<WindowsWindow*>(self);
+        m_Parent = static_cast<WindowsWindow*>(self);
 
         PIXELFORMATDESCRIPTOR pfd =
         {
@@ -41,7 +46,7 @@ namespace awml {
             0, 0, 0
         };
 
-        m_Context = GetDC(m_Window->m_Window);
+        m_Context = GetDC(m_Parent->m_Window);
 
         m_Format = ChoosePixelFormat(m_Context, &pfd);
 
@@ -49,11 +54,20 @@ namespace awml {
 
         m_OpenGLContext = wglCreateContext(m_Context);
 
+        if (!m_OpenGLContext)
+        {
+            m_Parent->NotifyError(error::CONTEXT, "Failed to create an OpenGL context!");
+            return false;
+        }
+
         return true;
     }
 
     bool WindowsOpenGLContext::Activate()
     {
+        if (!EnsureSetup())
+            return false;
+
         int attriblist[] = 
         {
             WGL_CONTEXT_MAJOR_VERSION_ARB,
@@ -69,38 +83,75 @@ namespace awml {
         wglMakeCurrent(m_Context, m_OpenGLContext);
         if (!glLoader::Init())
         {
-            m_Window->OnError(error::GENERIC, "Failed to initialize OpenGL");
+            m_Parent->NotifyError(error::CONTEXT, "Failed to initialize OpenGL");
             return false;
         }
+
         auto glversion = glGetString(GL_VERSION);
+
+        if (!glversion)
+        {
+            m_Parent->NotifyError(error::CONTEXT, "Failed to detect OpenGL version!");
+            return false;
+        }
 
         attriblist[1] = glversion[0] - '0';
         attriblist[3] = glversion[2] - '0';
 
         if (!glLoader::LoadVersion(attriblist[1], attriblist[3]))
         {
-            m_Window->OnError(error::GENERIC, "Failed to load OpenGL functions!");
+            m_Parent->NotifyError(error::CONTEXT, "Failed to load OpenGL functions!");
+            return false;
         }
 
         wglMakeCurrent(m_Context, NULL);
         wglDeleteContext(m_OpenGLContext);
 
         m_OpenGLContext = wglCreateContextAttribsARB(m_Context, 0, attriblist);
+        if (!m_OpenGLContext)
+        {
+            m_Parent->NotifyError(error::CONTEXT, "Failed to create an OpenGL context!");
+            return false;
+        }
+
         wglMakeCurrent(m_Context, m_OpenGLContext);
 
         return true;
     }
 
+    void WindowsOpenGLContext::MakeCurrent()
+    {
+        if (!EnsureSetup())
+            return;
+
+        if (!m_Context || !m_OpenGLContext)
+        {
+            m_Parent->NotifyError(error::CONTEXT, "Cannot make null context current!");
+            return;
+        }
+
+        wglMakeCurrent(m_Context, m_OpenGLContext);
+    }
+
     void WindowsOpenGLContext::SwapBuffers()
     {
+        if (!m_Context || !m_OpenGLContext)
+        {
+            m_Parent->NotifyError(error::CONTEXT, "Cannot swap buffers for null context!");
+            return;
+        }
+
         ::SwapBuffers(m_Context);
     }
 
     WindowsOpenGLContext::~WindowsOpenGLContext()
     {
+        if (!EnsureSetup())
+            return;
+
         wglMakeCurrent(m_Context, NULL);
         wglDeleteContext(m_OpenGLContext);
-        ReleaseDC(m_Window->m_Window, m_Context);
+        ReleaseDC(m_Parent->m_Window, m_Context);
     }
 
     WindowsWindow::WindowsWindow(
@@ -157,7 +208,7 @@ namespace awml {
         RecalculateNative();
     }
 
-    void WindowsWindow::Launch()
+    bool WindowsWindow::Launch()
     {
         static bool launched = false;
 
@@ -181,8 +232,8 @@ namespace awml {
 
             if (m_Window == NULL)
             {
-                OnError(error::NULL_WINDOW, "Could not create the window!");
-                return;
+                NotifyError(error::WINDOW, "Could not create the window!");
+                return false;
             }
 
             SetWindowLongPtrW(m_Window, 0, reinterpret_cast<LONG_PTR>(this));
@@ -195,9 +246,8 @@ namespace awml {
             switch (m_ContextType)
             {
             case Context::OpenGL:
-                SetContext(
-                    std::make_unique<WindowsOpenGLContext>()
-                );
+                if (!SetContext(std::make_unique<WindowsOpenGLContext>()))
+                    return false;
                 break;
             default:
                 break;
@@ -207,8 +257,11 @@ namespace awml {
         }
         else
         {
-            OnError(error::GENERIC, "Launch has already been called earlier!");
+            NotifyError(error::GENERIC, "Launch has already been called earlier!");
+            return false;
         }
+
+        return true;
     }
 
     void WindowsWindow::SetWindowMode(WindowMode window_mode)
@@ -313,13 +366,17 @@ namespace awml {
         }
     }
 
-    void WindowsWindow::SetContext(window_context wc)
+    bool WindowsWindow::SetContext(window_context wc)
     {
         m_Context.reset(wc.release());
 
-        m_Context->Setup(this);
+        if (!m_Context->Setup(this))
+            return false;
 
-        m_Context->Activate();
+        if (!m_Context->Activate())
+            return false;
+
+        return true;
     }
 
     void WindowsWindow::SetTitle(const std::wstring& title)
@@ -328,11 +385,22 @@ namespace awml {
         SetWindowTextW(m_Window, m_WindowTitle.data());
     }
 
+    void WindowsWindow::MakeCurrent()
+    {
+        if (!EnsureAlive())
+            return;
+
+        if (m_Context)
+            m_Context->MakeCurrent();
+        else
+            NotifyError(error::CONTEXT, "Cannot make NULL context current!");
+    }
+
     bool WindowsWindow::EnsureAlive()
     {
         if (!m_Window)
         {
-            OnError(error::NULL_WINDOW, "Cannot update a NULL window!");
+            NotifyError(error::WINDOW, "Window has not yet been launched!");
             return false;
         }
 
@@ -543,10 +611,13 @@ namespace awml {
         );
     }
 
-    void WindowsWindow::OnError(error code, const std::string& msg)
+    void WindowsWindow::NotifyError(error code, const std::string& message)
     {
         if (m_ErrorCB)
-            m_ErrorCB(code, msg);
+            m_ErrorCB(code, message);
+        else
+            // TODO: Replace with an awml specific error class
+            throw std::runtime_error(message);
     }
 
     void WindowsWindow::OnWindowResized(WORD width, WORD height)
@@ -685,13 +756,13 @@ namespace awml {
     {
         if (!m_Window)
         {
-            OnError(error::NULL_WINDOW, "Cannot resize a null window!");
+            NotifyError(error::WINDOW, "Cannot resize a null window!");
             return;
         }
 
         if (m_WindowMode == WindowMode::FULLSCREEN)
         {
-            OnError(error::GENERIC, "Cannot resize a fullscreen window!");
+            NotifyError(error::GENERIC, "Cannot resize a fullscreen window!");
             return;
         }
 
