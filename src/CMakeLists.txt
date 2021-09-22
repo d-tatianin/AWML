@@ -2,10 +2,10 @@ cmake_minimum_required(VERSION 3.6)
 
 project(AWML)
 
-set(PROJECT_ROOT ../)
+set(PROJECT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/..")
 
 if (WIN32)
-    include_directories("${$PROJECT_ROOT}/include" "${PROJECT_ROOT}/include/AWML")
+    include_directories("${PROJECT_ROOT}/include" "${PROJECT_ROOT}/include/AWML")
     execute_process(
         COMMAND python ${PROJECT_ROOT}/dependency_downloader.py ${PROJECT_ROOT}/include
         RESULT_VARIABLE FAILED
